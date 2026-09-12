@@ -7,7 +7,7 @@ const User = require('../models/User');
 // 1. ลงทะเบียน (สมัครสมาชิกใหม่)
 router.post('/register', async (req, res) => {
   try {
-    const { username, password, fullName, department } = req.body;
+    const { username, password, fullName } = req.body;
 
     const existingUser = await User.findOne({ username });
     if (existingUser) return res.status(400).json({ message: 'ชื่อผู้ใช้งานนี้มีอยู่ในระบบแล้ว' });
@@ -18,8 +18,7 @@ router.post('/register', async (req, res) => {
     const newUser = new User({
       username,
       password: hashedPassword,
-      fullName,
-      department
+      fullName
     });
 
     await newUser.save();

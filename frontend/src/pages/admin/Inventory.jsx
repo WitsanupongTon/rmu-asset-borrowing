@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import API from "../../api/axios";
 import Swal from "sweetalert2";
 import socket from "../../socket"; // 📌 นำเข้า Socket Instance จากไฟล์กลางแทนการ new io() ใหม่
+import LoadingState from "../../components/LoadingState";
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +60,8 @@ export default function Inventory() {
       setItems(res.data);
     } catch (err) {
       console.error("Error fetching items", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -183,6 +187,10 @@ export default function Inventory() {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (isLoading) {
+    return <LoadingState message="กำลังโหลดข้อมูลคลังอุปกรณ์..." />;
+  }
 
   return (
     <div className="space-y-6 relative">

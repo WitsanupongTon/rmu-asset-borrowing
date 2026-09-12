@@ -9,6 +9,7 @@ export default function AdminLayout() {
   const [user] = useState(() => JSON.parse(localStorage.getItem('user')) || {});
   
   const [stats, setStats] = useState({ categories: 0, borrowed: 0, overdue: 0 });
+  const [isStatsLoading, setIsStatsLoading] = useState(true);
   
   const [notifications, setNotifications] = useState({
     approveUsers: 0,
@@ -110,6 +111,8 @@ export default function AdminLayout() {
 
     } catch (err) {
       console.error('Failed to fetch stats:', err);
+    } finally {
+      setIsStatsLoading(false);
     }
   }, []);
 
@@ -145,9 +148,20 @@ export default function AdminLayout() {
   }, [fetchStats]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
+    Swal.fire({
+      title: 'ยืนยันการออกจากระบบ?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'ออกจากระบบ',
+      cancelButtonText: 'ยกเลิก',
+      confirmButtonColor: '#ef4444',
+    }).then((result) => {
+      if (result.isConfirmed) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/login');
+      }
+    });
   };
 
   // 📌 ปรับฟังก์ชันเคลียร์แจ้งเตือน บันทึก ID ที่ดูกดแล้วลง LocalStorage
@@ -208,20 +222,20 @@ export default function AdminLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{stats.categories} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.categories} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-2xl">📤</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{stats.borrowed} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่ถูกยืม</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.borrowed} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่ถูกยืม</span></p>
             </div>
           </div>
           <div className={`bg-white rounded-xl p-4 shadow-md flex items-center gap-4 ${stats.overdue > 0 ? 'border-2 border-red-500 bg-red-50' : ''}`}>
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">⚠️</div>
             <div>
               <p className={`font-bold text-xl ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                {stats.overdue} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>เกินกำหนด</span>
+                {isStatsLoading ? '...' : stats.overdue} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>เกินกำหนด</span>
               </p>
             </div>
           </div>

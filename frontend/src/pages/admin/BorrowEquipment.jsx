@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
+import LoadingState from '../../components/LoadingState';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 นำเข้า Socket Instance ส่วนกลาง
 
 export default function BorrowEquipment() {
   const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('user'));
 
   const [expandedItems, setExpandedItems] = useState({});
@@ -54,6 +56,8 @@ export default function BorrowEquipment() {
       setItems(res.data);
     } catch (error) {
       console.error("Error fetching items", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -121,6 +125,10 @@ export default function BorrowEquipment() {
       Swal.fire('ผิดพลาด', err.response?.data?.message || 'ไม่สามารถส่งคำร้องได้', 'error');
     }
   };
+
+  if (isLoading) {
+    return <LoadingState message="กำลังโหลดรายการอุปกรณ์..." />;
+  }
 
   return (
     <div className="space-y-6 relative">

@@ -26,10 +26,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-600 via-purple-600 to-purple-800 p-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/80 bg-white p-8 shadow-2xl shadow-indigo-200/60">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-2">ระบบยืม-คืนพัสดุ</h2>
-        <p className="text-center text-gray-500 text-sm mb-6">สำนักงานกองกลาง มรภ.มหาสารคาม</p>
+        <p className="mb-6 border-b border-gray-100 pb-4 text-center text-sm text-gray-500">สำนักงานกองกลาง มรภ.มหาสารคาม</p>
         
         {error && <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">{error}</div>}
         
@@ -39,7 +39,7 @@ export default function Login() {
             <input
               type="text"
               required
-              className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-300 p-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             />
           </div>
@@ -48,18 +48,18 @@ export default function Login() {
             <input
               type="password"
               required
-              className="mt-1 w-full p-2 border rounded-md focus:ring-2 focus:ring-blue-500 outline-none"
+              className="mt-1 w-full rounded-lg border border-gray-300 p-2.5 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-md transition"
+            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 font-semibold text-white shadow-md shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700"
           >
             เข้าสู่ระบบ
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
+        <p className="mt-5 border-t border-gray-100 pt-4 text-center text-sm text-gray-600">
           ยังไม่มีบัญชีผู้ใช้งาน? <Link to="/register" className="text-blue-600 hover:underline">ลงทะเบียนที่นี่</Link>
         </p>
       </div>

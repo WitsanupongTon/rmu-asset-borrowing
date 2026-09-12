@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
+import LoadingState from '../../components/LoadingState';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 Import socket เข้ามาใช้งาน
 
 export default function AdminReturns() {
   const [borrows, setBorrows] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   // 📌 State สำหรับการแบ่งหน้า
@@ -54,6 +56,8 @@ export default function AdminReturns() {
     } catch (error) {
       console.error("Error fetching borrows", error);
       Swal.fire('ผิดพลาด', 'ไม่สามารถดึงข้อมูลรายการยืมได้', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -107,6 +111,10 @@ export default function AdminReturns() {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = activeBorrows.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (isLoading) {
+    return <LoadingState message="กำลังโหลดรายการรอคืน..." />;
+  }
 
   return (
     <div className="space-y-6 relative">

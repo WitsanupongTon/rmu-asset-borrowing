@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios'; 
+import LoadingState from '../../components/LoadingState';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 Import socket เข้ามาใช้งาน
 
 export default function AdminHistory() {
   const [history, setHistory] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   // 📌 State สำหรับการแบ่งหน้า
@@ -56,6 +58,8 @@ export default function AdminHistory() {
     } catch (error) {
       console.error("Error fetching history", error);
       Swal.fire('ผิดพลาด', 'ไม่สามารถดึงข้อมูลประวัติได้', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,6 +109,10 @@ export default function AdminHistory() {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredHistory.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (isLoading) {
+    return <LoadingState message="กำลังโหลดประวัติการยืม-คืน..." />;
+  }
 
   return (
     <div className="space-y-6 relative">

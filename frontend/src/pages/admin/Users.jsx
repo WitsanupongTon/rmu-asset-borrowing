@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
+import LoadingState from '../../components/LoadingState';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 นำเข้า Socket Instance ส่วนกลาง
 
 export default function Users() {
   const [currentUser] = useState(() => JSON.parse(localStorage.getItem('user')) || {});
   const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   
   // 📌 State สำหรับการแบ่งหน้า
@@ -58,6 +60,8 @@ export default function Users() {
       setUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch users', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -122,6 +126,10 @@ export default function Users() {
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = filteredUsers.slice(indexOfFirstItem, indexOfLastItem);
+
+  if (isLoading) {
+    return <LoadingState message="กำลังโหลดข้อมูลผู้ใช้..." />;
+  }
 
   return (
     <div className="space-y-6 relative">
