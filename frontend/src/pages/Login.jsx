@@ -54,7 +54,7 @@ export default function Login() {
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 py-2.5 font-semibold text-white shadow-md shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700"
+            className="w-full rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 py-2.5 font-semibold text-white shadow-md shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700"
           >
             เข้าสู่ระบบ
           </button>
