@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import API from '../../api/axios'; 
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 Import socket เข้ามาใช้งาน
+import formatNumber from '../../utils/formatNumber';
 import { 
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
@@ -112,15 +113,15 @@ export default function AdminDashboard() {
     .sort((a, b) => b.อุปกรณ์ - a.อุปกรณ์)
     .slice(0, 5);
 
-  const categoryFreq = {};
+  const itemNameFreq = {};
   items.forEach(item => {
-    const cat = item.category || 'ไม่มีหมวดหมู่';
-    categoryFreq[cat] = (categoryFreq[cat] || 0) + (item.quantity || 1);
+    const name = item.name || 'ไม่ทราบชื่อ';
+    itemNameFreq[name] = (itemNameFreq[name] || 0) + (item.quantity || 1);
   });
   
-  const pieData = Object.keys(categoryFreq).map(name => ({
+  const pieData = Object.keys(itemNameFreq).map(name => ({
     name,
-    value: categoryFreq[name]
+    value: itemNameFreq[name]
   }));
 
   const recent5Transactions = [...borrows]
@@ -194,23 +195,23 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div className="bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">📦 อุปกรณ์ในระบบ</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.totalItems}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatNumber(stats.totalItems)}</p>
           </div>
           <div className="bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">👥 สมาชิกทั้งหมด</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.totalUsers}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatNumber(stats.totalUsers)}</p>
           </div>
           <div className="bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">⏳ คำร้องรอพิจารณา</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.pending}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatNumber(stats.pending)}</p>
           </div>
           <div className="bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">🏃 อุปกรณ์ที่ถูกยืม</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.borrowed}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatNumber(stats.borrowed)}</p>
           </div>
           <div className="bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
             <p className="text-xs text-gray-500 mb-1">⚠️ เกินกำหนดส่ง</p>
-            <p className="text-2xl font-bold text-gray-800">{stats.overdue}</p>
+            <p className="text-2xl font-bold text-gray-800">{formatNumber(stats.overdue)}</p>
           </div>
         </div>
 
@@ -221,8 +222,8 @@ export default function AdminDashboard() {
               <ResponsiveContainer>
                 <BarChart data={top5ItemsData}>
                   <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 12 }} />
-                  <Tooltip cursor={{fill: 'transparent'}} />
+                  <YAxis tick={{ fontSize: 12 }} tickFormatter={formatNumber} />
+                  <Tooltip cursor={{fill: 'transparent'}} formatter={(value) => formatNumber(value)} />
                   <Bar dataKey="อุปกรณ์" radius={[4, 4, 0, 0]} barSize={40}>
                     {top5ItemsData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
@@ -234,7 +235,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="bg-white p-4 rounded-xl border border-black/10 shadow-md">
-            <h3 className="text-sm font-bold text-gray-700 mb-4">📊 สัดส่วนอุปกรณ์</h3>
+            <h3 className="text-sm font-bold text-gray-700 mb-4">📊 สัดส่วนอุปกรณ์ตามชื่อ</h3>
             <div className="h-64 w-full">
               <ResponsiveContainer>
                 <PieChart>
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip formatter={(value) => formatNumber(value)} />
                   <Legend verticalAlign="middle" align="right" layout="vertical" wrapperStyle={{ fontSize: '12px' }} />
                 </PieChart>
               </ResponsiveContainer>
@@ -274,7 +275,7 @@ export default function AdminDashboard() {
                   recent5Transactions.map(record => (
                     <tr key={record._id} className="border-b border-black/10 last:border-0 hover:bg-gray-50">
                       <td className="py-3 text-gray-800">
-                        {record.item?.name || 'ไม่ทราบชื่อ'} <span className="text-gray-400 text-xs">(x{record.quantity})</span>
+                        {record.item?.name || 'ไม่ทราบชื่อ'} <span className="text-gray-400 text-xs">(x{formatNumber(record.quantity)})</span>
                       </td>
                       <td className="py-3 text-center text-gray-600">{formatDate(record.borrowDate || record.createdAt)}</td>
                       <td className="py-3 text-center text-gray-600">{record.status === 'pending' || record.status === 'rejected' ? '-' : formatDate(record.dueDate)}</td>

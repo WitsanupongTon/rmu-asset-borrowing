@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import LoadingState from '../../components/LoadingState';
+import PaginationBar from '../../components/PaginationBar';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 Import socket เข้ามาใช้งาน
 
@@ -49,7 +50,7 @@ export default function ApproveUsers() {
 
   const fetchUsers = async () => {
     try {
-      const res = await API.get('/users/all');
+      const res = await API.get('/users/pending');
       setUsers(res.data);
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -75,7 +76,7 @@ export default function ApproveUsers() {
 
     if (result.isConfirmed) {
       try {
-        await API.put(`/users/${id}`, { status });
+        await API.put(`/users/${id}/approve`, { status });
         Swal.fire({
           icon: 'success',
           title: `${actionText}เรียบร้อยแล้ว`,
@@ -84,7 +85,11 @@ export default function ApproveUsers() {
         });
         fetchUsers();
       } catch (err) {
-        Swal.fire({ icon: 'error', title: 'เกิดข้อผิดพลาด', text: 'ไม่สามารถอัปเดตสถานะได้' });
+        Swal.fire({
+          icon: 'error',
+          title: 'เกิดข้อผิดพลาด',
+          text: err.response?.data?.message || 'ไม่สามารถอัปเดตสถานะได้'
+        });
       }
     }
   };
@@ -98,9 +103,8 @@ export default function ApproveUsers() {
     return `${day}/${month}/${year}`;
   };
 
-  // กรองเฉพาะคนที่สถานะเป็น 'pending' (รออนุมัติ) และตรงกับคำค้นหา
+  // API ส่งเฉพาะคำขอสมัครที่รออนุมัติและบัญชี pending เก่าที่ยังต้องจัดการ
   const filteredUsers = users.filter(u =>
-    u.status === 'pending' &&
     (u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
      u.fullName.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -116,7 +120,7 @@ export default function ApproveUsers() {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="relative flex min-h-125 flex-col gap-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
           <span className="text-xl">📋</span> อนุมัติคำร้องสมาชิกใหม่
@@ -192,39 +196,15 @@ export default function ApproveUsers() {
           </table>
         </div>
 
-        {/* ส่วนแบ่งหน้า (Pagination) */}
-        {filteredUsers.length > 0 && (
-          <div className="flex justify-between items-center p-4 bg-gray-50 border-t border-black/10 rounded-b-xl">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === 1 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm hover:cursor-pointer'
-              }`}
-            >
-              ◀ ก่อนหน้า
-            </button>
-            
-            <span className="text-sm text-gray-600 font-medium">
-              หน้า {currentPage} จาก {totalPages}
-            </span>
-            
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === totalPages 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm hover:cursor-pointer'
-              }`}
-            >
-              ถัดไป ▶
-            </button>
-          </div>
-        )}
       </div>
+
+      {filteredUsers.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }

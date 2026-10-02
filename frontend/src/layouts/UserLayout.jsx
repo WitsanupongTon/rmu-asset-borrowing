@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 import Swal from 'sweetalert2';
 import socket from '../socket'; // 📌 Import socket เข้ามาใช้งาน
+import formatNumber from '../utils/formatNumber';
 
 export default function UserLayout() {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ export default function UserLayout() {
         Swal.fire({
           icon: 'warning',
           title: 'คุณมีรายการเกินกำหนด!',
-          text: `คุณมีอุปกรณ์ที่เกินกำหนดคืนจำนวน ${overdueCount} รายการ กรุณานำมาคืนโดยเร็ว`,
+          text: `คุณมีอุปกรณ์ที่เกินกำหนดคืนจำนวน ${formatNumber(overdueCount)} รายการ กรุณานำมาคืนโดยเร็ว`,
           confirmButtonColor: '#d33',
           timer: 5000
         });
@@ -134,20 +135,20 @@ export default function UserLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.categories} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-2xl">📤</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.borrowed} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่คุณยืม</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่คุณยืม</span></p>
             </div>
           </div>
           <div className={`bg-white rounded-xl p-4 shadow-md flex items-center gap-4 ${stats.overdue > 0 ? 'border-2 border-red-500 bg-red-50' : ''}`}>
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">⚠️</div>
             <div>
               <p className={`font-bold text-xl ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                {isStatsLoading ? '...' : stats.overdue} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>คุณเกินกำหนด</span>
+                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>คุณเกินกำหนด</span>
               </p>
             </div>
           </div>

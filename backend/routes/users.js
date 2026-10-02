@@ -2,12 +2,15 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs'); 
 const User = require('../models/User');
+const RegistrationRequest = require('../models/RegistrationRequest');
 const { protect, adminOnly } = require('../middleware/auth');
 
 // 1. ดึงข้อมูลผู้ใช้ทั้งหมด (เฉพาะ Admin)
 router.get('/all', protect, adminOnly, async (req, res) => {
   try {
-    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    const users = await User.find({
+      $or: [{ role: 'admin' }, { status: 'approved' }]
+    }).select('-password').sort({ createdAt: -1 });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูลผู้ใช้' });
@@ -31,7 +34,7 @@ router.post('/add', protect, adminOnly, async (req, res) => {
       fullName,
       department: department || '-',
       role,
-      status
+      status: status || 'approved'
     });
 
     // 📡 ยิงสัญญาณ Real-time
@@ -87,8 +90,17 @@ router.delete('/:id', protect, adminOnly, async (req, res) => {
 // ดึงรายชื่อผู้ใช้ที่รอการอนุมัติ (เฉพาะ Admin)
 router.get('/pending', protect, adminOnly, async (req, res) => {
   try {
-    const pendingUsers = await User.find({ status: 'pending' }).select('-password');
-    res.json(pendingUsers);
+    const [pendingUsers, pendingRequests] = await Promise.all([
+      User.find({ status: 'pending' }).select('-password').lean(),
+      RegistrationRequest.find({ status: 'pending' }).select('-password').lean()
+    ]);
+
+    const results = [
+      ...pendingUsers.map(user => ({ ...user, requestType: 'legacy-user' })),
+      ...pendingRequests.map(request => ({ ...request, requestType: 'registration' }))
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    res.json(results);
   } catch (error) {
     res.status(500).json({ message: 'เกิดข้อผิดพลาดในการดึงข้อมูล' });
   }
@@ -98,15 +110,65 @@ router.get('/pending', protect, adminOnly, async (req, res) => {
 router.put('/:id/approve', protect, adminOnly, async (req, res) => {
   try {
     const { status } = req.body; 
+    if (!['approved', 'rejected'].includes(status)) {
+      return res.status(400).json({ message: 'สถานะที่ระบุไม่ถูกต้อง' });
+    }
+
+    const registrationRequest = await RegistrationRequest.findOne({
+      _id: req.params.id,
+      status: 'pending'
+    });
+
+    if (registrationRequest) {
+      let createdUser = null;
+
+      if (status === 'approved') {
+        const existingUser = await User.findOne({ username: registrationRequest.username });
+        if (existingUser) {
+          return res.status(409).json({ message: 'ชื่อผู้ใช้นี้มีบัญชีอยู่แล้ว ไม่สามารถอนุมัติซ้ำได้' });
+        }
+
+        createdUser = await User.create({
+          username: registrationRequest.username,
+          password: registrationRequest.password,
+          fullName: registrationRequest.fullName,
+          department: registrationRequest.department || '-',
+          role: 'user',
+          status: 'approved'
+        });
+      }
+
+      const requestUpdate = await RegistrationRequest.updateOne(
+        { _id: registrationRequest._id, status: 'pending' },
+        {
+          $set: { status },
+          $unset: { password: '' }
+        }
+      );
+
+      if (requestUpdate.modifiedCount !== 1) {
+        if (createdUser) await User.findByIdAndDelete(createdUser._id);
+        return res.status(409).json({ message: 'คำขอนี้ถูกดำเนินการไปแล้ว' });
+      }
+
+      if (req.io) {
+        req.io.emit('users_updated');
+      }
+
+      return res.json({
+        message: status === 'approved' ? 'อนุมัติและสร้างบัญชีผู้ใช้สำเร็จ' : 'ปฏิเสธคำขอสมัครสมาชิกแล้ว',
+        user: createdUser ? createdUser.toObject({ transform: (doc, ret) => { delete ret.password; return ret; } }) : null
+      });
+    }
+
+    // รองรับบัญชี pending ที่ถูกสร้างไว้ก่อนแยก RegistrationRequest
     const user = await User.findByIdAndUpdate(
       req.params.id,
       { status },
       { returnDocument: 'after' }
     ).select('-password');
-    
-    if (!user) {
-      return res.status(404).json({ message: 'ไม่พบผู้ใช้นี้' });
-    }
+
+    if (!user) return res.status(404).json({ message: 'ไม่พบคำขอหรือผู้ใช้นี้' });
 
     // 📡 ยิงสัญญาณ Real-time
     if (req.io) req.io.emit('users_updated');

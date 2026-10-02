@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import LoadingState from '../../components/LoadingState';
+import PaginationBar from '../../components/PaginationBar';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 นำเข้า Socket Instance ส่วนกลาง
 
@@ -132,7 +133,7 @@ export default function Users() {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="relative flex min-h-125 flex-col gap-6">
       {/* ส่วนบน: หัวข้อและการค้นหา */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
@@ -156,7 +157,7 @@ export default function Users() {
       </div>
 
       {/* ส่วนล่าง: ตารางข้อมูลพร้อมแบ่งหน้า */}
-      <div className="rounded-xl border border-black/10 shadow-md bg-white flex flex-col">
+      <div className="rounded-xl border border-black/10 shadow-md bg-white">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -205,39 +206,16 @@ export default function Users() {
           </table>
         </div>
 
-        {/* ส่วนแบ่งหน้า (Pagination) */}
-        {filteredUsers.length > 0 && (
-          <div className="flex justify-between items-center p-4 bg-gray-50 border-t border-black/10 rounded-b-xl">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === 1 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer'
-              }`}
-            >
-              ◀ ก่อนหน้า
-            </button>
-            
-            <span className="text-sm text-gray-600 font-medium">
-              หน้า {currentPage} จาก {totalPages}
-            </span>
-            
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === totalPages 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer'
-              }`}
-            >
-              ถัดไป ▶
-            </button>
-          </div>
-        )}
       </div>
+
+      {/* แถบแบ่งหน้าแยกจากตารางและดันลงไปอยู่ด้านล่างของพื้นที่หน้า */}
+      {filteredUsers.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">

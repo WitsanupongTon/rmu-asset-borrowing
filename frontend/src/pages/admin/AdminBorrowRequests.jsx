@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import API from '../../api/axios';
 import LoadingState from '../../components/LoadingState';
+import PaginationBar from '../../components/PaginationBar';
 import Swal from 'sweetalert2';
 import socket from '../../socket';
+import formatNumber from '../../utils/formatNumber';
 
 export default function AdminBorrowRequests() {
   const [requests, setRequests] = useState([]);
@@ -67,7 +69,7 @@ export default function AdminBorrowRequests() {
         Swal.fire({
           icon: 'error',
           title: 'อุปกรณ์ไม่เพียงพอ',
-          text: `ไม่สามารถอนุมัติได้ เนื่องจากอุปกรณ์ในคลังเหลือเพียง ${availableQuantity} ชิ้น (คำร้องขอ ${requestedQuantity} ชิ้น)`,
+          text: `ไม่สามารถอนุมัติได้ เนื่องจากอุปกรณ์ในคลังเหลือเพียง ${formatNumber(availableQuantity)} ชิ้น (คำร้องขอ ${formatNumber(requestedQuantity)} ชิ้น)`,
           confirmButtonColor: '#ef4444',
           confirmButtonText: 'ตกลง'
         });
@@ -76,7 +78,7 @@ export default function AdminBorrowRequests() {
 
       const confirm = await Swal.fire({
         title: 'ยืนยันการอนุมัติ?',
-        text: `ยืนยันการอนุมัติให้ยืมอุปกรณ์เป็นเวลา ${defaultDays} วัน`,
+        text: `ยืนยันการอนุมัติให้ยืมอุปกรณ์เป็นเวลา ${formatNumber(defaultDays)} วัน`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#22c55e',
@@ -145,7 +147,7 @@ export default function AdminBorrowRequests() {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="relative flex min-h-125 flex-col gap-6">
       {/* ส่วนบน: หัวข้อและการค้นหา */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
@@ -195,8 +197,8 @@ export default function AdminBorrowRequests() {
                     </td>
                     <td className="p-4 font-medium text-gray-800">{req.item?.name || 'ไม่พบอุปกรณ์'}</td>
                     <td className="p-4 text-gray-600">{req.user?.username || req.user?.name || 'ไม่ระบุตัวตน'}</td>
-                    <td className="p-4 text-center text-gray-700">{req.quantity}</td>
-                    <td className="p-4 text-center text-gray-700">{req.days || 7} วัน</td>
+                    <td className="p-4 text-center text-gray-700">{formatNumber(req.quantity)}</td>
+                    <td className="p-4 text-center text-gray-700">{formatNumber(req.days || 7)} วัน</td>
                     <td className="p-4 text-center text-gray-600">{formatDate(req.borrowDate || req.createdAt)}</td>
                     
                     <td className="p-4 text-center">
@@ -234,39 +236,15 @@ export default function AdminBorrowRequests() {
           </table>
         </div>
 
-        {/* ส่วนแบ่งหน้า (Pagination) */}
-        {pendingRequests.length > 0 && (
-          <div className="flex justify-between items-center p-4 bg-gray-50 border-t border-black/10 rounded-b-xl">
-            <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === 1 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer'
-              }`}
-            >
-              ◀ ก่อนหน้า
-            </button>
-            
-            <span className="text-sm text-gray-600 font-medium">
-              หน้า {currentPage} จาก {totalPages}
-            </span>
-            
-            <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === totalPages 
-                  ? 'bg-gray-200 text-gray-400 cursor-default opacity-60' 
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer'
-              }`}
-            >
-              ถัดไป ▶
-            </button>
-          </div>
-        )}
       </div>
+
+      {pendingRequests.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 import Swal from 'sweetalert2';
 import socket from '../socket'; // 📌 Import socket เข้ามาใช้งาน
+import formatNumber from '../utils/formatNumber';
 
 export default function AdminLayout() {
   const navigate = useNavigate();
@@ -36,11 +37,11 @@ export default function AdminLayout() {
       
       let pendingUserIds = [];
       try {
-        const usersRes = await API.get('/users/all');
+        const usersRes = await API.get('/users/pending');
         const usersData = Array.isArray(usersRes.data) 
           ? usersRes.data 
           : (usersRes.data.users || usersRes.data.data || []);
-        pendingUserIds = usersData.filter(u => u.status === 'pending').map(u => u._id);
+        pendingUserIds = usersData.map(u => u._id);
       } catch (e) {
         console.log("ไม่สามารถดึงข้อมูลผู้ใช้");
       }
@@ -103,7 +104,7 @@ export default function AdminLayout() {
         Swal.fire({
           icon: 'warning',
           title: 'มีรายการเกินกำหนด!',
-          text: `มีรายการอุปกรณ์ที่เกินกำหนดคืนจำนวน ${overdueIds.length} รายการ กรุณาตรวจสอบ`,
+          text: `มีรายการอุปกรณ์ที่เกินกำหนดคืนจำนวน ${formatNumber(overdueIds.length)} รายการ กรุณาตรวจสอบ`,
           confirmButtonColor: '#d33',
           timer: 5000
         });
@@ -222,20 +223,20 @@ export default function AdminLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.categories} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-2xl">📤</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : stats.borrowed} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่ถูกยืม</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่ถูกยืม</span></p>
             </div>
           </div>
           <div className={`bg-white rounded-xl p-4 shadow-md flex items-center gap-4 ${stats.overdue > 0 ? 'border-2 border-red-500 bg-red-50' : ''}`}>
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">⚠️</div>
             <div>
               <p className={`font-bold text-xl ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                {isStatsLoading ? '...' : stats.overdue} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>เกินกำหนด</span>
+                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>เกินกำหนด</span>
               </p>
             </div>
           </div>
@@ -260,7 +261,7 @@ export default function AdminLayout() {
               
               {item.badgeKey && notifications[item.badgeKey] > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full border-2 border-white shadow-md z-10 animate-bounce">
-                  {notifications[item.badgeKey]}
+                  {formatNumber(notifications[item.badgeKey])}
                 </span>
               )}
             </NavLink>

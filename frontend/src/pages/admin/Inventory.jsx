@@ -3,6 +3,8 @@ import API from "../../api/axios";
 import Swal from "sweetalert2";
 import socket from "../../socket"; // 📌 นำเข้า Socket Instance จากไฟล์กลางแทนการ new io() ใหม่
 import LoadingState from "../../components/LoadingState";
+import PaginationBar from "../../components/PaginationBar";
+import formatNumber from "../../utils/formatNumber";
 
 export default function Inventory() {
   const [items, setItems] = useState([]);
@@ -193,7 +195,7 @@ export default function Inventory() {
   }
 
   return (
-    <div className="space-y-6 relative">
+    <div className="relative flex min-h-125 flex-col gap-6">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
           📦 จัดการคลังอุปกรณ์
@@ -256,7 +258,7 @@ export default function Inventory() {
                     </td>
                     <td className="p-4 text-gray-600">{item.category}</td>
                     <td className="p-4 font-bold text-purple-700">
-                      {item.quantity}
+                      {formatNumber(item.quantity)}
                     </td>
                     <td className="p-4 text-xs text-gray-600 max-w-xs whitespace-normal">
                       {item.description ? (
@@ -313,38 +315,15 @@ export default function Inventory() {
           </table>
         </div>
 
-        {filteredItems.length > 0 && (
-          <div className="flex justify-between items-center p-4 bg-gray-50 border-t border-black/10 rounded-b-xl">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === 1
-                  ? "bg-gray-200 text-gray-400 cursor-default opacity-60"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer"
-              }`}
-            >
-              ◀ ก่อนหน้า
-            </button>
-
-            <span className="text-sm text-gray-600 font-medium">
-              หน้า {currentPage} จาก {totalPages}
-            </span>
-
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                currentPage === totalPages
-                  ? "bg-gray-200 text-gray-400 cursor-default opacity-60"
-                  : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 shadow-sm cursor-pointer"
-              }`}
-            >
-              ถัดไป ▶
-            </button>
-          </div>
-        )}
       </div>
+
+      {filteredItems.length > 0 && (
+        <PaginationBar
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">

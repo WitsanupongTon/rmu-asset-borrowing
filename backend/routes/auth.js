@@ -3,25 +3,31 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const RegistrationRequest = require('../models/RegistrationRequest');
 
 // 1. ลงทะเบียน (สมัครสมาชิกใหม่)
 router.post('/register', async (req, res) => {
   try {
     const { username, password, fullName } = req.body;
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser) return res.status(400).json({ message: 'ชื่อผู้ใช้งานนี้มีอยู่ในระบบแล้ว' });
+    const [existingUser, existingRequest] = await Promise.all([
+      User.findOne({ username }),
+      RegistrationRequest.findOne({ username, status: 'pending' })
+    ]);
+    if (existingUser || existingRequest) {
+      return res.status(400).json({ message: 'ชื่อผู้ใช้งานนี้มีอยู่ในระบบหรือกำลังรออนุมัติ' });
+    }
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const newUser = new User({
+    const registrationRequest = new RegistrationRequest({
       username,
       password: hashedPassword,
       fullName
     });
 
-    await newUser.save();
+    await registrationRequest.save();
 
     // 📡 ยิงสัญญาณ Real-time แจ้งแอดมินว่ามีสมาชิกสมัครเข้ามาใหม่
     if (req.io) {
@@ -40,7 +46,13 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: 'ไม่พบชื่อผู้ใช้งานนี้' });
+    if (!user) {
+      const pendingRequest = await RegistrationRequest.exists({ username, status: 'pending' });
+      if (pendingRequest) {
+        return res.status(403).json({ message: 'บัญชีของคุณกำลังรอการอนุมัติจาก Admin' });
+      }
+      return res.status(400).json({ message: 'ไม่พบชื่อผู้ใช้งานนี้' });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: 'รหัสผ่านไม่ถูกต้อง' });

@@ -32,6 +32,7 @@ backend/
 	config/db.js              ฟังก์ชันเชื่อมต่อ MongoDB
 	middleware/auth.js        protect และ adminOnly
 	models/User.js            schema ผู้ใช้
+	models/RegistrationRequest.js คำขอสมัครที่ยังไม่เป็นบัญชีผู้ใช้
 	models/Item.js            schema อุปกรณ์
 	models/Borrow.js          schema รายการยืม
 	routes/auth.js            register และ login
@@ -111,7 +112,18 @@ npm run preview
 - `status`: `pending`, `approved` หรือ `rejected`, ค่าเริ่มต้น `pending`
 - มี `createdAt` และ `updatedAt`
 
-ผู้ใช้ทั่วไปที่สมัครเองจะเป็น `role=user` และ `status=pending` จึงยัง login ไม่ได้จนกว่า Admin จะเปลี่ยนสถานะเป็น `approved` Admin ไม่ถูกบังคับด้วย status ตอน login
+บัญชี User ที่อนุมัติแล้วจะมี `role=user` และ `status=approved`; ผู้ใช้ใหม่จะยังไม่มีเอกสารใน collection นี้ก่อนอนุมัติ Admin ไม่ถูกบังคับด้วย status ตอน login
+
+ปัจจุบันการสมัครใหม่จะยังไม่สร้างเอกสารใน collection `User` แต่บันทึกข้อมูล (รวม password hash) ลง collection `RegistrationRequest` แยกต่างหากเพื่อรอพิจารณา เมื่ออนุมัติจึงสร้าง User ด้วย `status=approved` และลบ password hash ออกจากคำขอ ส่วนคำขอที่ถูกปฏิเสธจะเก็บสถานะไว้ แต่ลบ password hash เช่นกัน บัญชี pending ที่สร้างไว้ก่อนการแยก collection ยังแสดงในคิวอนุมัติเพื่อรองรับข้อมูลเดิม
+
+### RegistrationRequest (`models/RegistrationRequest.js`)
+
+- `username`: ชื่อผู้ใช้ที่ต้องการสมัคร
+- `password`: password hash ชั่วคราว ระหว่างรอผลอนุมัติ
+- `fullName`: ชื่อ-นามสกุล
+- `department`: ค่าเริ่มต้น `-`
+- `status`: `pending`, `approved` หรือ `rejected`
+- มี `createdAt` และ `updatedAt`
 
 ### Item (`models/Item.js`)
 
@@ -128,6 +140,7 @@ npm run preview
 
 - `user`: ObjectId อ้างอิง User
 - `item`: ObjectId อ้างอิง Item
+- `requestId`: idempotency key ของรายการจาก cart (optional สำหรับรายการเดิม) ใช้ป้องกันสร้างคำขอซ้ำเมื่อ retry
 - `quantity`: จำนวนที่ยืม, default `1`
 - `days`: จำนวนวันที่ขอยืม, default `7`
 - `status`: `pending`, `approved`, `rejected` หรือ `returned`
@@ -158,7 +171,7 @@ Base URL คือ `http://localhost:5000/api`
 
 | Method | Path | สิทธิ์ | การทำงาน |
 |---|---|---|---|
-| POST | `/auth/register` | สาธารณะ | สร้าง user ใหม่เป็น pending และ emit `users_updated` |
+| POST | `/auth/register` | สาธารณะ | สร้าง RegistrationRequest ที่ pending (ยังไม่สร้าง User) และ emit `users_updated` |
 | POST | `/auth/login` | สาธารณะ | ตรวจ username/password, ตรวจ approval และคืน JWT กับ user |
 
 ข้อมูล register ที่ใช้คือ `username`, `password`, `fullName` โดย backend จะตั้ง `department` เป็น `-` อัตโนมัติ
@@ -178,7 +191,8 @@ Base URL คือ `http://localhost:5000/api`
 
 | Method | Path | สิทธิ์ | การทำงาน |
 |---|---|---|---|
-| POST | `/borrows/request` | login แล้ว | สร้างคำร้องยืม โดยใช้ user จาก token |
+| POST | `/borrows/request` | login แล้ว | สร้างคำร้องยืมหนึ่งรายการ โดยใช้ user จาก token |
+| POST | `/borrows/request-batch` | login แล้ว | สร้างคำร้องหลายรายการจาก cart แบบ idempotent ด้วย `requestId` ต่อรายการ |
 | GET | `/borrows/my-history` | login แล้ว | ประวัติของ user จาก token |
 | GET | `/borrows/admin/all` | Admin | รายการยืมทั้งหมด พร้อม populate user และ item |
 | PUT | `/borrows/:id/status` | Admin | เปลี่ยนเป็น `approved` หรือ `rejected` |
@@ -203,16 +217,20 @@ Base URL คือ `http://localhost:5000/api`
 
 การเปลี่ยนแปลง borrow หรือ stock จะ emit `borrow_updated`, `borrowsUpdated`, `inventory_updated` และ `itemsUpdated`
 
+หน้า `/borrow` เก็บ cart draft ใน `localStorage` แยกตาม user ID โดยเก็บเฉพาะ item ID, ชื่อ, จำนวน, จำนวนวัน และ request ID ไม่เก็บรูป เมื่อกลับเข้าหน้าจะโหลด inventory ล่าสุดมาเทียบกับ draft; item ที่ถูกลบหรือมี stock ไม่พอจะแสดงเตือนและส่งไม่ได้
+
+การส่ง cart ใช้ `POST /borrows/request-batch` หนึ่งครั้ง ระบบตรวจ stock ล่าสุดและบันทึกแต่ละรายการด้วย unique key `(user, requestId)` พร้อม upsert ทำให้ retry ด้วย draft เดิมไม่สร้าง Borrow ซ้ำ หากไม่ทราบผลจาก network error ระบบล็อก draft และให้ส่งรายการเดิมซ้ำเพื่อยืนยันผล ก่อนจึงจะล้าง cart หลัง API สำเร็จ
+
 ### Users
 
 | Method | Path | สิทธิ์ | การทำงาน |
 |---|---|---|---|
-| GET | `/users/all` | Admin | ดึงผู้ใช้ทั้งหมดโดยไม่ส่ง password |
-| POST | `/users/add` | Admin | สร้างผู้ใช้โดย Admin และ hash password |
+| GET | `/users/all` | Admin | ดึง Admin และบัญชี approved โดยไม่ส่ง password; ไม่รวมคำขอสมัครที่ยัง pending |
+| POST | `/users/add` | Admin | สร้างบัญชีผู้ใช้โดย Admin และ hash password; ค่าเริ่มต้นเป็น approved |
 | PUT | `/users/:id` | Admin | แก้ fullName, role, status, department |
 | DELETE | `/users/:id` | Admin | ลบผู้ใช้ |
-| GET | `/users/pending` | Admin | ดึงผู้ใช้ที่ status เป็น pending |
-| PUT | `/users/:id/approve` | Admin | เปลี่ยน status ตาม body |
+| GET | `/users/pending` | Admin | ดึง RegistrationRequest ที่ pending และ pending User เก่าที่ยังต้องจัดการ |
+| PUT | `/users/:id/approve` | Admin | อนุมัติ/ปฏิเสธคำขอ; ถ้าอนุมัติ RegistrationRequest จะสร้าง User จริงในขั้นตอนนี้ |
 
 การเปลี่ยนแปลง user จะ emit `users_updated`
 
@@ -220,14 +238,16 @@ Base URL คือ `http://localhost:5000/api`
 
 ### ผู้ใช้ทั่วไป
 
-1. เปิด `/register` และส่งข้อมูลไป `POST /api/auth/register`
-2. รอ Admin อนุมัติ
-3. เปิด `/login` และ login เมื่อ status เป็น approved
-4. frontend เก็บ JWT แล้วไป `/dashboard` ซึ่ง redirect ต่อไป `/borrow`
-5. หน้า `/borrow` โหลด item จาก `GET /items`
-6. เลือก item, จำนวน และจำนวนวันลงตะกร้า
-7. กดส่งคำร้อง ระบบยิง `POST /borrows/request` แยกหนึ่ง request ต่อหนึ่ง item
-8. ดูประวัติของตัวเองที่ `/history` ซึ่งเรียก `GET /borrows/user/:userId`
+1. เปิด `/register` และส่งข้อมูลไป `POST /api/auth/register`; ระบบบันทึกเป็นคำขอสมัคร ไม่ใช่ User account
+2. คำขอปรากฏที่ `/admin/approve-users` โดยไม่ปรากฏใน `/admin/users`
+3. รอ Admin อนุมัติ; เมื่ออนุมัติ backend จึงสร้าง User account จริง
+4. เปิด `/login` และเข้าสู่ระบบได้หลังอนุมัติเท่านั้น
+5. frontend เก็บ JWT แล้วไป `/dashboard` ซึ่ง redirect ต่อไป `/borrow`
+6. หน้า `/borrow` โหลด item จาก `GET /items`
+7. เลือก item, จำนวน และจำนวนวันลงตะกร้า
+8. cart draft ถูกเก็บแยกตาม user และกู้คืนเมื่อกลับเข้าหน้า พร้อมตรวจ stock ล่าสุด
+9. กดส่งคำร้อง ระบบส่ง cart ทั้งหมดด้วย `POST /borrows/request-batch`; กรณี network error สามารถ retry draft เดิมโดยไม่สร้างคำขอซ้ำ
+10. ดูประวัติของตัวเองที่ `/history` ซึ่งเรียก `GET /borrows/user/:userId`
 
 ### Admin
 

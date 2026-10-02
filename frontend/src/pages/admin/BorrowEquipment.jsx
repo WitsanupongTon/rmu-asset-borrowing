@@ -3,20 +3,71 @@ import API from '../../api/axios';
 import LoadingState from '../../components/LoadingState';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 นำเข้า Socket Instance ส่วนกลาง
+import formatNumber from '../../utils/formatNumber';
+
+const createRequestId = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+};
+
+const readCartDraft = (storageKey) => {
+  try {
+    const draft = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    return {
+      items: Array.isArray(draft.items) ? draft.items.map((item) => ({
+        _id: item.itemId || item._id,
+        name: item.itemName || item.name || 'กำลังตรวจสอบอุปกรณ์',
+        borrowQty: Number(item.borrowQty) || 1,
+        borrowDays: Number(item.borrowDays) || 7,
+        requestId: item.requestId || createRequestId(),
+        isMissing: false,
+      })) : [],
+      submissionUnconfirmed: Boolean(draft.submissionUnconfirmed),
+    };
+  } catch {
+    return { items: [], submissionUnconfirmed: false };
+  }
+};
 
 export default function BorrowEquipment() {
   const [items, setItems] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('user'));
+  const userId = user?._id || user?.id || 'unknown-user';
+  const cartStorageKey = `borrowCart:${userId}`;
+  const [initialCartDraft] = useState(() => readCartDraft(cartStorageKey));
 
   const [expandedItems, setExpandedItems] = useState({});
-  const [cart, setCart] = useState([]); 
+  const [cart, setCart] = useState(initialCartDraft.items);
+  const [isCartReady, setIsCartReady] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionUnconfirmed, setSubmissionUnconfirmed] = useState(initialCartDraft.submissionUnconfirmed);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   
   const [activeItem, setActiveItem] = useState(null);
   const [modalQty, setModalQty] = useState(1);
   const [modalDays, setModalDays] = useState(7);
   const [isCustomDays, setIsCustomDays] = useState(false);
+
+  useEffect(() => {
+    if (!isCartReady) return;
+
+    if (cart.length === 0 && !submissionUnconfirmed) {
+      localStorage.removeItem(cartStorageKey);
+      return;
+    }
+
+    localStorage.setItem(cartStorageKey, JSON.stringify({
+      items: cart.map((cartItem) => ({
+        itemId: cartItem._id,
+        itemName: cartItem.name,
+        borrowQty: cartItem.borrowQty,
+        borrowDays: cartItem.borrowDays,
+        requestId: cartItem.requestId,
+      })),
+      submissionUnconfirmed,
+    }));
+  }, [cart, cartStorageKey, isCartReady, submissionUnconfirmed]);
 
   useEffect(() => {
     fetchItems();
@@ -53,10 +104,33 @@ export default function BorrowEquipment() {
   const fetchItems = async () => {
     try {
       const res = await API.get('/items');
-      setItems(res.data);
+      const latestItems = res.data;
+      const latestItemsById = new Map(latestItems.map((item) => [item._id, item]));
+      setItems(latestItems);
+      setCart((currentCart) => currentCart.map((cartItem) => {
+        const latestItem = latestItemsById.get(cartItem._id);
+        if (!latestItem) {
+          return {
+            ...cartItem,
+            name: cartItem.name || 'ไม่พบอุปกรณ์นี้แล้ว',
+            quantity: 0,
+            image: 'https://placehold.co/150?text=No+Image',
+            isMissing: true,
+          };
+        }
+
+        return {
+          ...latestItem,
+          borrowQty: cartItem.borrowQty,
+          borrowDays: cartItem.borrowDays,
+          requestId: cartItem.requestId || createRequestId(),
+          isMissing: false,
+        };
+      }));
     } catch (error) {
       console.error("Error fetching items", error);
     } finally {
+      setIsCartReady(true);
       setIsLoading(false);
     }
   };
@@ -66,6 +140,11 @@ export default function BorrowEquipment() {
   };
 
   const openItemModal = (item) => {
+    if (submissionUnconfirmed) {
+      Swal.fire('กำลังตรวจสอบคำขอเดิม', 'กรุณากดส่งคำร้องรายการเดิมซ้ำเพื่อยืนยันผลก่อนแก้ไขตะกร้า', 'info');
+      return;
+    }
+
     if (cart.find((c) => c._id === item._id)) {
       Swal.fire('แจ้งเตือน', 'อุปกรณ์นี้อยู่ในรายการแล้ว', 'info');
       return;
@@ -78,7 +157,7 @@ export default function BorrowEquipment() {
 
   const confirmAddToCart = () => {
     if (modalQty > activeItem.quantity || modalQty < 1) {
-      Swal.fire('ผิดพลาด', `ระบุจำนวนไม่ถูกต้อง (เหลือ ${activeItem.quantity} ชิ้น)`, 'error');
+      Swal.fire('ผิดพลาด', `ระบุจำนวนไม่ถูกต้อง (เหลือ ${formatNumber(activeItem.quantity)} ชิ้น)`, 'error');
       return;
     }
 
@@ -87,7 +166,13 @@ export default function BorrowEquipment() {
       return;
     }
     
-    setCart([...cart, { ...activeItem, borrowQty: Number(modalQty), borrowDays: Number(modalDays) }]);
+    setCart((currentCart) => [...currentCart, {
+      ...activeItem,
+      borrowQty: Number(modalQty),
+      borrowDays: Number(modalDays),
+      requestId: createRequestId(),
+      isMissing: false,
+    }]);
     setActiveItem(null); 
     
     Swal.fire({
@@ -99,30 +184,56 @@ export default function BorrowEquipment() {
   };
 
   const handleRemoveFromCart = (id) => {
+    if (submissionUnconfirmed) {
+      Swal.fire('กำลังตรวจสอบคำขอเดิม', 'กรุณาส่งคำร้องเดิมซ้ำก่อนแก้ไขตะกร้า เพื่อป้องกันคำขอซ้ำ', 'info');
+      return;
+    }
+
     const updatedCart = cart.filter(c => c._id !== id);
     setCart(updatedCart);
     if (updatedCart.length === 0) setIsCartModalOpen(false); 
   };
 
   const handleSubmitCart = async () => {
-    try {
-      const promises = cart.map(c => 
-        API.post('/borrows/request', {
-          itemId: c._id,
-          quantity: c.borrowQty,
-          days: c.borrowDays,
-          userId: user?._id 
-        })
-      );
+    if (isSubmitting || cart.length === 0) return;
 
-      await Promise.all(promises);
+    const unavailableItem = cart.find((cartItem) =>
+      cartItem.isMissing || cartItem.borrowQty > cartItem.quantity
+    );
+    if (unavailableItem) {
+      Swal.fire(
+        'จำนวนอุปกรณ์เปลี่ยนแปลง',
+        unavailableItem.isMissing
+          ? `ไม่พบอุปกรณ์ "${unavailableItem.name}" แล้ว กรุณาลบออกจากตะกร้า`
+          : `อุปกรณ์ "${unavailableItem.name}" เหลือ ${formatNumber(unavailableItem.quantity)} ชิ้น กรุณาลดจำนวนหรือเอาออกจากตะกร้า`,
+        'warning'
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await API.post('/borrows/request-batch', {
+        requests: cart.map((cartItem) => ({
+          itemId: cartItem._id,
+          quantity: cartItem.borrowQty,
+          days: cartItem.borrowDays,
+          requestId: cartItem.requestId,
+        })),
+      });
 
       Swal.fire('สำเร็จ!', 'ส่งคำร้องขอยืมอุปกรณ์ทั้งหมดเรียบร้อยแล้ว รอพิจารณา', 'success');
       setCart([]); 
+      setSubmissionUnconfirmed(false);
       setIsCartModalOpen(false); 
       fetchItems(); 
     } catch (err) {
+      if (!err.response || err.response.status >= 500) {
+        setSubmissionUnconfirmed(true);
+      }
       Swal.fire('ผิดพลาด', err.response?.data?.message || 'ไม่สามารถส่งคำร้องได้', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -141,7 +252,7 @@ export default function BorrowEquipment() {
             onClick={() => setIsCartModalOpen(true)}
             className="bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-lg font-bold shadow-md transition flex items-center gap-2 cursor-pointer"
           >
-            📋 รายการที่เลือก <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-sm">{cart.length}</span>
+            📋 รายการที่เลือก <span className="bg-white text-amber-600 px-2 py-0.5 rounded-full text-sm">{formatNumber(cart.length)}</span>
           </button>
         )}
       </div>
@@ -191,10 +302,10 @@ export default function BorrowEquipment() {
               </div>
 
               <div className="mt-auto pt-4 border-t border-black/10 flex justify-between items-center">
-                <span className="text-sm font-semibold text-gray-700">เหลือ {item.quantity}</span>
+                <span className="text-sm font-semibold text-gray-700">เหลือ {formatNumber(item.quantity)}</span>
                 <button 
                   onClick={() => openItemModal(item)}
-                  disabled={isOutOfStock || isItemInCart}
+                  disabled={isOutOfStock || isItemInCart || submissionUnconfirmed}
                   className={`px-4 py-1.5 rounded-lg text-sm font-semibold text-white transition cursor-pointer ${
                     isItemInCart 
                       ? "bg-green-500 cursor-not-allowed" 
@@ -203,7 +314,7 @@ export default function BorrowEquipment() {
                         : "bg-gray-300 cursor-not-allowed"
                   }`}
                 >
-                  {isItemInCart ? "✓ เลือกแล้ว" : "ขอยืม"}
+                  {isItemInCart ? "✓ เลือกแล้ว" : submissionUnconfirmed ? "รอยืนยันคำขอ" : "ขอยืม"}
                 </button>
               </div>
             </div>
@@ -221,7 +332,7 @@ export default function BorrowEquipment() {
             
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนที่ต้องการ (เหลือ {activeItem.quantity})</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนที่ต้องการ (เหลือ {formatNumber(activeItem.quantity)})</label>
                 <input 
                   type="number" 
                   min="1" 
@@ -294,6 +405,12 @@ export default function BorrowEquipment() {
               <h3 className="text-lg font-bold text-gray-800">📋 สรุปรายการขอยืม</h3>
               <button onClick={() => setIsCartModalOpen(false)} className="text-gray-400 hover:text-red-500 font-bold text-xl cursor-pointer">&times;</button>
             </div>
+
+            {submissionUnconfirmed && (
+              <div className="mx-4 mt-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                การส่งครั้งก่อนอาจสำเร็จแล้ว แต่ไม่ได้รับผลตอบกลับ กรุณากดส่งรายการเดิมซ้ำเพื่อให้ระบบตรวจสอบ โดยอย่าแก้ตะกร้าระหว่างนี้
+              </div>
+            )}
             
             <div className="p-4 overflow-y-auto grow">
               <table className="w-full text-left border-collapse min-w-125">
@@ -313,10 +430,19 @@ export default function BorrowEquipment() {
                         <img src={c.image || "https://placehold.co/150"} alt={c.name} className="w-12 h-12 object-cover rounded border border-black/10" />
                       </td>
                       <td className="p-3 font-semibold text-gray-700">{c.name}</td>
-                      <td className="p-3">{c.borrowQty}</td>
-                      <td className="p-3">{c.borrowDays} วัน</td>
+                      <td className="p-3">{formatNumber(c.borrowQty)}</td>
+                      <td className="p-3">{formatNumber(c.borrowDays)} วัน</td>
                       <td className="p-3 text-center">
-                        <button onClick={() => handleRemoveFromCart(c._id)} className="text-rose-500 hover:text-rose-700 bg-rose-50 px-2 py-1 rounded-lg cursor-pointer">
+                        {c.isMissing || c.borrowQty > c.quantity ? (
+                          <p className="mb-2 text-xs font-medium text-red-600">
+                            {c.isMissing ? 'ไม่พบอุปกรณ์' : `เหลือเพียง ${formatNumber(c.quantity)} ชิ้น`}
+                          </p>
+                        ) : null}
+                        <button
+                          onClick={() => handleRemoveFromCart(c._id)}
+                          disabled={submissionUnconfirmed || isSubmitting}
+                          className="text-rose-500 hover:text-rose-700 bg-rose-50 px-2 py-1 rounded-lg cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                        >
                           🗑️
                         </button>
                       </td>
@@ -330,8 +456,12 @@ export default function BorrowEquipment() {
               <button onClick={() => setIsCartModalOpen(false)} className="px-5 py-2 rounded-lg text-gray-600 font-semibold hover:bg-gray-200 transition cursor-pointer">
                 กลับไปเลือกเพิ่ม
               </button>
-              <button onClick={handleSubmitCart} className="px-6 py-2 rounded-lg text-white font-semibold bg-purple-600 hover:bg-purple-700 shadow-md transition cursor-pointer">
-                🚀 ส่งคำร้องทั้งหมด
+              <button
+                onClick={handleSubmitCart}
+                disabled={isSubmitting || cart.length === 0 || cart.some((c) => c.isMissing || c.borrowQty > c.quantity)}
+                className="px-6 py-2 rounded-lg text-white font-semibold bg-purple-600 hover:bg-purple-700 shadow-md transition cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isSubmitting ? 'กำลังส่งคำร้อง...' : submissionUnconfirmed ? '🔁 ตรวจสอบ/ส่งรายการเดิมซ้ำ' : '🚀 ส่งคำร้องทั้งหมด'}
               </button>
             </div>
           </div>
