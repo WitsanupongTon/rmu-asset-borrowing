@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import API from '../../api/axios'; 
 import LoadingState from '../../components/LoadingState';
 import PaginationBar from '../../components/PaginationBar';
 import formatNumber from '../../utils/formatNumber';
+import { Menu } from 'lucide-react';
 import Swal from 'sweetalert2';
 import socket from '../../socket'; // 📌 Import socket เข้ามาใช้งาน
 
@@ -10,10 +11,24 @@ export default function AdminHistory() {
   const [history, setHistory] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [isFilterMenuOpen, setIsFilterMenuOpen] = useState(false);
+  const filterMenuRef = useRef(null);
 
   // 📌 State สำหรับการแบ่งหน้า
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!filterMenuRef.current?.contains(event.target)) {
+        setIsFilterMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    return () => document.removeEventListener('pointerdown', handlePointerDown);
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -100,11 +115,31 @@ export default function AdminHistory() {
     return null;
   };
 
-  const filteredHistory = history.filter(record => 
-    record.item?.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    record.user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.user?.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const isOverdue = (record) =>
+    record.status === 'approved' && record.dueDate && new Date(record.dueDate) < new Date();
+
+  const statusFilters = [
+    { key: 'all', label: 'ทั้งหมด', count: history.length },
+    { key: 'approved', label: 'กำลังยืมอยู่', count: history.filter(record => record.status === 'approved' && !isOverdue(record)).length },
+    { key: 'pending', label: 'รออนุมัติ', count: history.filter(record => record.status === 'pending').length },
+    { key: 'overdue', label: 'เลยกำหนด', count: history.filter(isOverdue).length },
+    { key: 'returned', label: 'คืนแล้ว', count: history.filter(record => record.status === 'returned').length },
+    { key: 'rejected', label: 'ไม่อนุมัติ', count: history.filter(record => record.status === 'rejected').length },
+  ];
+
+  const filteredHistory = history.filter(record => {
+    const matchesSearch =
+      record.item?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.user?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === 'all'
+      || (statusFilter === 'overdue' && isOverdue(record))
+      || (statusFilter === 'approved' && record.status === 'approved' && !isOverdue(record))
+      || (['pending', 'returned', 'rejected'].includes(statusFilter) && record.status === statusFilter);
+
+    return matchesSearch && matchesStatus;
+  });
 
   // 📌 คำนวณข้อมูลสำหรับการแบ่งหน้า
   const totalPages = Math.max(1, Math.ceil(filteredHistory.length / itemsPerPage));
@@ -123,18 +158,74 @@ export default function AdminHistory() {
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
           📊 ประวัติการยืม-คืน
         </h2>
-        <div className="relative w-full md:w-80">
-          <input 
-            type="text" 
-            placeholder="ค้นหาชื่ออุปกรณ์ หรือ ชื่อผู้ยืม..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1); // รีเซ็ตกลับไปหน้า 1 เสมอเมื่อมีการค้นหา
-            }}
-            className="w-full border border-black/10 pl-4 pr-10 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
-          />
-          <span className="absolute right-3 top-2.5 text-gray-400 text-sm">🔍</span>
+        <div className="flex w-full items-center gap-2 md:w-auto">
+          <div className="relative w-full md:w-80">
+            <input 
+              type="text" 
+              placeholder="ค้นหาชื่ออุปกรณ์ หรือ ชื่อผู้ยืม..."
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1); // รีเซ็ตกลับไปหน้า 1 เสมอเมื่อมีการค้นหา
+              }}
+              className="w-full border border-black/10 pl-4 pr-10 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+            />
+            <span className="absolute right-3 top-2.5 text-gray-400 text-sm">🔍</span>
+          </div>
+
+          <div className="relative shrink-0" ref={filterMenuRef}>
+            <button
+              type="button"
+              aria-label="กรองประวัติตามสถานะ"
+              aria-haspopup="menu"
+              aria-expanded={isFilterMenuOpen}
+              onClick={() => setIsFilterMenuOpen((isOpen) => !isOpen)}
+              className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3 text-sm font-semibold shadow-sm transition ${
+                statusFilter !== 'all'
+                  ? 'border-purple-700 bg-purple-700 text-white hover:bg-purple-800'
+                  : 'border-black/10 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50'
+              }`}
+            >
+              <Menu size={19} aria-hidden="true" />
+              <span>{statusFilters.find((filter) => filter.key === statusFilter)?.label || 'ตัวกรอง'}</span>
+            </button>
+
+            {isFilterMenuOpen && (
+              <div
+                role="menu"
+                aria-label="เลือกสถานะประวัติ"
+                className="absolute right-0 top-full z-30 mt-2 w-56 rounded-xl border border-black/10 bg-white p-2 shadow-xl"
+              >
+                {statusFilters.map((filter) => {
+                  const isActive = statusFilter === filter.key;
+
+                  return (
+                    <button
+                      key={filter.key}
+                      type="button"
+                      role="menuitemradio"
+                      aria-checked={isActive}
+                      onClick={() => {
+                        setStatusFilter(filter.key);
+                        setCurrentPage(1);
+                        setIsFilterMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                        isActive
+                          ? 'bg-purple-700 text-white'
+                          : 'text-gray-700 hover:bg-purple-50 hover:text-purple-800'
+                      }`}
+                    >
+                      <span>{filter.label}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs ${isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                        {formatNumber(filter.count)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

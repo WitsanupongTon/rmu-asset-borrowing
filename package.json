@@ -1,16 +1,14 @@
 {
   "name": "rmu-asset-borrowing",
   "version": "1.0.0",
-  "description": "",
+  "description": "Asset Borrowing System",
   "main": "index.js",
   "scripts": {
+    "postinstall": "npm install --prefix backend && npm install --prefix frontend",
     "backend": "npm run dev --prefix backend",
     "frontend": "npm run dev --prefix frontend",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\""
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
