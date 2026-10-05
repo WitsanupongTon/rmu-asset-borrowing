@@ -23,8 +23,8 @@ export default function UserLayout() {
       const items = itemsRes.data || [];
       const myBorrows = Array.isArray(myBorrowsRes.data) ? myBorrowsRes.data : [];
 
-      // นับจำนวนประเภทอุปกรณ์ทั้งหมด
-      const categoriesCount = new Set(items.map(item => item.category)).size;
+      // นับจำนวนชนิดอุปกรณ์ในคลัง โดยนับรายการอุปกรณ์ ไม่ได้นับหมวดหมู่
+      const itemTypesCount = items.length;
 
       // นับรายการที่กำลังยืมอยู่ และเกินกำหนด
       const activeBorrows = myBorrows.filter(b => b.status === 'approved' || b.status === 'borrowed');
@@ -32,7 +32,7 @@ export default function UserLayout() {
       const overdueCount = activeBorrows.filter(b => b.dueDate && new Date(b.dueDate) < now).length;
 
       setStats({
-        categories: categoriesCount,
+        categories: itemTypesCount,
         borrowed: activeBorrows.length,
         overdue: overdueCount
       });
@@ -135,7 +135,7 @@ export default function UserLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ชนิดอุปกรณ์ในระบบ</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
