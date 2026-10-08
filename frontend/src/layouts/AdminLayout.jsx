@@ -104,7 +104,7 @@ export default function AdminLayout() {
         Swal.fire({
           icon: 'warning',
           title: 'มีรายการเกินกำหนด!',
-          text: `มีรายการอุปกรณ์ที่เกินกำหนดคืนจำนวน ${formatNumber(overdueIds.length)} รายการ กรุณาตรวจสอบ`,
+          text: `มีรายการพัสดุที่เกินกำหนดคืนจำนวน ${formatNumber(overdueIds.length)} รายการ กรุณาตรวจสอบ`,
           confirmButtonColor: '#d33',
           timer: 5000
         });
@@ -188,13 +188,13 @@ export default function AdminLayout() {
 
   const navItems = [
     { label: '🏠 Dashboard', path: '/admin' },
-    { label: '🕹️ ยืมอุปกรณ์', path: '/admin/borrow' },
-    { label: '📦 จัดการคลัง', path: '/admin/inventory' },
+    { label: '🕹️ ยืมพัสดุ', path: '/admin/borrow' },
+    { label: '📦 จัดการคลังพัสดุ', path: '/admin/inventory' },
     { label: '🎥 จัดการผู้ใช้', path: '/admin/users' },
     { label: '📋 อนุมัติสมาชิก', path: '/admin/approve-users', badgeKey: 'approveUsers' },
-    { label: '📋 คำร้องขอยืม', path: '/admin/borrow-requests', badgeKey: 'borrowRequests' },
+    { label: '📋 คำร้องขอยืมพัสดุ', path: '/admin/borrow-requests', badgeKey: 'borrowRequests' },
     { label: '🕹️ จัดการการคืน', path: '/admin/returns', badgeKey: 'returns' },
-    { label: '📊 ประวัติยืม-คืน', path: '/admin/history', badgeKey: 'history' },
+    { label: '📊 ประวัติยืม-คืนพัสดุ', path: '/admin/history', badgeKey: 'history' },
   ];
 
   return (
@@ -205,15 +205,15 @@ export default function AdminLayout() {
           <div className="flex items-center gap-3">
             <div className="p-3 bg-amber-100 rounded-xl text-2xl">📋</div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">ระบบยืม-คืนอุปกรณ์</h1>
-              <p className="text-xs text-gray-500 font-medium">
+              <h1 className="text-xl font-bold text-gray-800">ระบบยืม-คืนพัสดุ</h1>
+              <p className="text-sm text-gray-600 font-medium">
                 ยินดีต้อนรับ, <span className="font-bold text-gray-800">{user.fullName || user.username || 'admin'}</span> ({user.role === 'admin' ? 'ผู้ดูแลระบบ' : 'ผู้ใช้งาน'})
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition shadow-sm cursor-pointer"
+            className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium transition shadow-sm cursor-pointer"
           >
             🚪 ออกจากระบบ
           </button>
@@ -223,20 +223,20 @@ export default function AdminLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ประเภทอุปกรณ์</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ชนิดพัสดุในคลัง</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-2xl">📤</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่ถูกยืม</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">ชิ้นที่ถูกยืม</span></p>
             </div>
           </div>
           <div className={`bg-white rounded-xl p-4 shadow-md flex items-center gap-4 ${stats.overdue > 0 ? 'border-2 border-red-500 bg-red-50' : ''}`}>
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">⚠️</div>
             <div>
               <p className={`font-bold text-xl ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>เกินกำหนด</span>
+                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>รายการเกินกำหนด</span>
               </p>
             </div>
           </div>
@@ -250,7 +250,7 @@ export default function AdminLayout() {
               end={item.path === '/admin'}
               onClick={() => handleClearNotification(item.badgeKey)}
               className={({ isActive }) =>
-                `relative px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 shadow ${
+                  `relative px-4 py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all duration-200 shadow ${
                   isActive
                     ? 'bg-purple-900 text-white ring-2 ring-purple-300'
                     : 'bg-white text-gray-700 hover:bg-purple-50'

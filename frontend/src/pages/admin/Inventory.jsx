@@ -38,7 +38,7 @@ export default function Inventory() {
       fetchItems();
       Swal.fire({
         icon: "info",
-        title: "คลังอุปกรณ์มีการอัปเดต",
+        title: "คลังพัสดุมีการอัปเดต",
         toast: true,
         position: "top-end",
         showConfirmButton: false,
@@ -126,7 +126,7 @@ export default function Inventory() {
         await API.put(`/items/${formData._id}`, formData);
         Swal.fire({
           icon: "success",
-          title: "อัปเดตอุปกรณ์สำเร็จ",
+          title: "อัปเดตพัสดุสำเร็จ",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -137,7 +137,7 @@ export default function Inventory() {
         await API.post("/items", payload);
         Swal.fire({
           icon: "success",
-          title: "เพิ่มอุปกรณ์สำเร็จ",
+          title: "เพิ่มพัสดุสำเร็จ",
           timer: 1500,
           showConfirmButton: false,
         });
@@ -154,7 +154,7 @@ export default function Inventory() {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "ยืนยันการลบ?",
-      text: "ข้อมูลอุปกรณ์นี้จะถูกลบออกจากคลัง",
+      text: "ข้อมูลพัสดุนี้จะถูกลบออกจากคลัง",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#ef4444",
@@ -174,7 +174,7 @@ export default function Inventory() {
         });
         fetchItems();
       } catch (err) {
-        Swal.fire("ผิดพลาด", "ไม่สามารถลบอุปกรณ์นี้ได้", "error");
+        Swal.fire("ผิดพลาด", "ไม่สามารถลบพัสดุนี้ได้", "error");
       }
     }
   };
@@ -191,20 +191,20 @@ export default function Inventory() {
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
 
   if (isLoading) {
-    return <LoadingState message="กำลังโหลดข้อมูลคลังอุปกรณ์..." />;
+    return <LoadingState message="กำลังโหลดข้อมูลคลังพัสดุ..." />;
   }
 
   return (
-    <div className="relative flex min-h-125 flex-col gap-6">
+    <div className="relative flex min-h-125 flex-col gap-6 text-base">
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-          📦 จัดการคลังอุปกรณ์
+          📦 จัดการคลังพัสดุ
         </h2>
         <div className="flex gap-2 w-full md:w-auto">
           <input
             type="text"
             placeholder="ค้นหาชื่อ, หมวดหมู่..."
-            className="border border-black/10 p-2 rounded-lg w-full md:w-64 text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+            className="border border-black/10 p-2.5 rounded-lg w-full md:w-64 text-base focus:ring-2 focus:ring-purple-400 outline-none"
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -213,9 +213,9 @@ export default function Inventory() {
           />
           <button
             onClick={() => handleOpenModal()}
-            className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition shadow cursor-pointer"
+            className="bg-purple-700 hover:bg-purple-800 text-white px-4 py-2.5 rounded-lg text-base font-semibold whitespace-nowrap transition shadow cursor-pointer"
           >
-            + เพิ่มอุปกรณ์
+            + เพิ่มพัสดุ
           </button>
         </div>
       </div>
@@ -224,9 +224,9 @@ export default function Inventory() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-black/10 text-gray-700 text-sm font-semibold">
+              <tr className="bg-gray-50 border-b border-black/10 text-gray-700 text-base font-semibold">
                 <th className="p-4">รูปภาพ</th>
-                <th className="p-4">ชื่ออุปกรณ์</th>
+                <th className="p-4">ชื่อพัสดุ</th>
                 <th className="p-4">หมวดหมู่</th>
                 <th className="p-4">จำนวน</th>
                 <th className="p-4">คำอธิบาย</th>
@@ -238,7 +238,7 @@ export default function Inventory() {
                 currentItems.map((item) => (
                   <tr
                     key={item._id}
-                    className="border-b border-black/10 bg-white hover:bg-gray-50 text-sm align-top"
+                    className="border-b border-black/10 bg-white hover:bg-gray-50 text-base align-top"
                   >
                     <td className="p-4">
                       <img
@@ -260,7 +260,7 @@ export default function Inventory() {
                     <td className="p-4 font-bold text-purple-700">
                       {formatNumber(item.quantity)}
                     </td>
-                    <td className="p-4 text-xs text-gray-600 max-w-xs whitespace-normal">
+                    <td className="p-4 text-sm text-gray-600 max-w-xs whitespace-normal">
                       {item.description ? (
                         item.description.length > 40 ? (
                           <div>
@@ -272,7 +272,7 @@ export default function Inventory() {
                             <button
                               type="button"
                               onClick={() => toggleExpand(item._id)}
-                              className="text-purple-600 font-semibold hover:underline text-[11px] mt-1 inline-flex items-center gap-1 cursor-pointer"
+                              className="text-purple-600 font-semibold hover:underline text-sm mt-1 inline-flex items-center gap-1 cursor-pointer"
                             >
                               {expandedItems[item._id]
                                 ? "▲ แสดงน้อยลง"
@@ -290,13 +290,13 @@ export default function Inventory() {
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleOpenModal(item)}
-                          className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm cursor-pointer"
+                          className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer"
                         >
                           ✏️ แก้ไข
                         </button>
                         <button
                           onClick={() => handleDelete(item._id)}
-                          className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition shadow-sm cursor-pointer"
+                          className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm cursor-pointer"
                         >
                           🗑️ ลบ
                         </button>
@@ -307,7 +307,7 @@ export default function Inventory() {
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center py-10 text-gray-400">
-                    ไม่พบข้อมูลอุปกรณ์ในคลัง
+                    ไม่พบข้อมูลพัสดุในคลัง
                   </td>
                 </tr>
               )}
@@ -329,17 +329,19 @@ export default function Inventory() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
           <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-black/10">
             <h3 className="text-lg font-bold text-gray-800 mb-4">
-              {isEditing ? "✏️ แก้ไขอุปกรณ์" : "📦 เพิ่มอุปกรณ์ใหม่"}
+              {isEditing ? "✏️ แก้ไขพัสดุ" : "📦 เพิ่มพัสดุใหม่"}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  ชื่ออุปกรณ์
+                <label className="block text-base font-semibold text-gray-600 mb-1">
+                  ชื่อพัสดุ <span className="text-red-600" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                  aria-required="true"
+                  autoComplete="off"
+                  className="w-full border border-black/10 p-2.5 rounded-lg text-base focus:ring-2 focus:ring-purple-400 outline-none"
                   value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
@@ -347,13 +349,14 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  หมวดหมู่
+                <label className="block text-base font-semibold text-gray-600 mb-1">
+                  หมวดหมู่ <span className="text-red-600" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="text"
                   required
-                  className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                  aria-required="true"
+                  className="w-full border border-black/10 p-2.5 rounded-lg text-base focus:ring-2 focus:ring-purple-400 outline-none"
                   value={formData.category}
                   onChange={(e) =>
                     setFormData({ ...formData, category: e.target.value })
@@ -361,14 +364,16 @@ export default function Inventory() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  จำนวน
+                <label className="block text-base font-semibold text-gray-600 mb-1">
+                  จำนวนพัสดุ <span className="text-red-600" aria-hidden="true">*</span>
                 </label>
                 <input
                   type="number"
                   required
                   min="0"
-                  className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                  step="1"
+                  aria-required="true"
+                  className="w-full border border-black/10 p-2.5 rounded-lg text-base focus:ring-2 focus:ring-purple-400 outline-none"
                   value={formData.quantity}
                   onChange={(e) =>
                     setFormData({ ...formData, quantity: e.target.value })
@@ -377,8 +382,8 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
-                  เลือกรูปภาพอุปกรณ์ (จากเครื่อง)
+                <label className="block text-base font-semibold text-gray-600 mb-1">
+                  เลือกรูปภาพพัสดุ (จากเครื่อง)
                 </label>
                 <input
                   type="file"
@@ -401,12 +406,12 @@ export default function Inventory() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                <label className="block text-base font-semibold text-gray-600 mb-1">
                   คำอธิบาย
                 </label>
                 <textarea
                   rows="3"
-                  className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none"
+                  className="w-full border border-black/10 p-2.5 rounded-lg text-base focus:ring-2 focus:ring-purple-400 outline-none"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
@@ -418,15 +423,15 @@ export default function Inventory() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition cursor-pointer"
+                  className="px-4 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition cursor-pointer"
                 >
                   ยกเลิก
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-purple-700 hover:bg-purple-800 rounded-lg transition shadow-md cursor-pointer"
+                  className="px-4 py-2.5 text-sm font-semibold text-white bg-purple-700 hover:bg-purple-800 rounded-lg transition shadow-md cursor-pointer"
                 >
-                  {isEditing ? "บันทึกการแก้ไข" : "บันทึกอุปกรณ์"}
+                  {isEditing ? "บันทึกการแก้ไข" : "บันทึกพัสดุ"}
                 </button>
               </div>
             </form>

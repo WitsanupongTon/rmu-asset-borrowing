@@ -35,7 +35,7 @@ export default function Login() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้งาน</label>
+            <label className="block text-base font-medium text-gray-700">ชื่อผู้ใช้งาน <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
               type="text"
               required
@@ -44,7 +44,7 @@ export default function Login() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">รหัสผ่าน</label>
+            <label className="block text-base font-medium text-gray-700">รหัสผ่าน <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
               type="password"
               required

@@ -8,19 +8,29 @@ const { protect, adminOnly } = require('../middleware/auth');
 router.post('/request', protect, async (req, res) => {
   try {
     const { itemId, quantity, days } = req.body; 
+    const requestedQuantity = Number(quantity ?? 1);
+    const requestedDays = Number(days ?? 7);
+
+    if (
+      !/^[a-f\d]{24}$/i.test(String(itemId || '')) ||
+      !Number.isInteger(requestedQuantity) || requestedQuantity < 1 ||
+      !Number.isInteger(requestedDays) || requestedDays < 1
+    ) {
+      return res.status(400).json({ message: 'กรุณาระบุพัสดุ จำนวน และจำนวนวันที่ถูกต้อง' });
+    }
     
     // เช็คสต๊อกก่อนให้ยืม
     const item = await Item.findById(itemId);
-    if (!item) return res.status(404).json({ message: 'ไม่พบอุปกรณ์' });
-    if (item.quantity < (quantity || 1)) {
-      return res.status(400).json({ message: 'อุปกรณ์มีจำนวนไม่เพียงพอ' });
+    if (!item) return res.status(404).json({ message: 'ไม่พบพัสดุ' });
+    if (item.quantity < requestedQuantity) {
+      return res.status(400).json({ message: 'พัสดุมีจำนวนไม่เพียงพอ' });
     }
 
     const borrow = new Borrow({
       user: req.user._id,
       item: itemId,
-      quantity: quantity || 1,
-      days: days || 7 
+      quantity: requestedQuantity,
+      days: requestedDays
     });
     await borrow.save();
 
@@ -42,7 +52,7 @@ router.post('/request-batch', protect, async (req, res) => {
     const { requests } = req.body;
 
     if (!Array.isArray(requests) || requests.length === 0 || requests.length > 100) {
-      return res.status(400).json({ message: 'กรุณาส่งรายการอุปกรณ์ 1 ถึง 100 รายการ' });
+      return res.status(400).json({ message: 'กรุณาส่งรายการพัสดุ 1 ถึง 100 รายการ' });
     }
 
     const requestIds = new Set();
@@ -102,10 +112,10 @@ router.post('/request-batch', protect, async (req, res) => {
 
       for (const request of newRequests) {
         const item = currentItemsById.get(String(request.itemId));
-        if (!item) return res.status(404).json({ message: 'ไม่พบอุปกรณ์บางรายการในตะกร้า' });
+        if (!item) return res.status(404).json({ message: 'ไม่พบพัสดุบางรายการในตะกร้า' });
         if (item.quantity < Number(request.quantity)) {
           return res.status(400).json({
-            message: `อุปกรณ์ "${item.name}" เหลือ ${item.quantity} ชิ้น ไม่เพียงพอกับจำนวนที่ขอ`
+            message: `พัสดุ "${item.name}" เหลือ ${item.quantity} ชิ้น ไม่เพียงพอกับจำนวนที่ขอ`
           });
         }
       }
@@ -200,7 +210,7 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
       // 🛑 ตรวจสอบจำนวนคงเหลือในคลังก่อนอนุมัติ
       const item = await Item.findById(borrow.item);
       if (!item || item.quantity < borrow.quantity) {
-        return res.status(400).json({ message: 'อุปกรณ์ไม่เพียงพอ ไม่สามารถอนุมัติได้' });
+        return res.status(400).json({ message: 'พัสดุไม่เพียงพอ ไม่สามารถอนุมัติได้' });
       }
 
       const approvedDays = days || borrow.days || 7; 
@@ -218,7 +228,7 @@ router.put('/:id/status', protect, adminOnly, async (req, res) => {
     borrow.status = status;
     await borrow.save();
 
-    // 📡 ยิงสัญญาณ Real-time อัปเดตรายการยืมและจำนวนอุปกรณ์คงเหลือ
+    // 📡 แจ้ง client ว่ารายการยืมและจำนวนพัสดุคงเหลือเปลี่ยนแปลง
     if (req.io) {
       req.io.emit('borrow_updated');
       req.io.emit('borrowsUpdated');
@@ -246,7 +256,7 @@ router.put('/:id/return', protect, adminOnly, async (req, res) => {
       $inc: { quantity: borrow.quantity } 
     });
 
-    // 📡 ยิงสัญญาณ Real-time อัปเดตรายการคืนและคืนสต๊อกเข้าคลัง
+    // 📡 แจ้ง client ว่ารับคืนพัสดุและเพิ่ม stock ในคลังแล้ว
     if (req.io) {
       req.io.emit('borrow_updated');
       req.io.emit('borrowsUpdated');

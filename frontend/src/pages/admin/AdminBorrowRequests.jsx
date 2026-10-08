@@ -22,7 +22,7 @@ export default function AdminBorrowRequests() {
       socket.connect();
     }
 
-    // ⚡ ฟังก์ชันดักรับ Event เมื่อมีการอัปเดตข้อมูลอุปกรณ์หรือคำร้อง
+    // ⚡ ฟังก์ชันดักรับ Event เมื่อมีการอัปเดตข้อมูลพัสดุหรือคำร้อง
     const handleItemsUpdated = () => {
       fetchRequests();
       
@@ -31,7 +31,7 @@ export default function AdminBorrowRequests() {
         toast: true,
         position: 'top-end',
         icon: 'info',
-        title: 'มีการอัปเดตข้อมูลรายการยืม/อุปกรณ์!',
+        title: 'มีการอัปเดตข้อมูลรายการยืม/พัสดุ!',
         showConfirmButton: false,
         timer: 3000,
         timerProgressBar: true
@@ -64,12 +64,12 @@ export default function AdminBorrowRequests() {
       const availableQuantity = req.item?.quantity ?? 0;
       const requestedQuantity = req.quantity ?? 0;
 
-      // 🛑 เช็กว่าอุปกรณ์คงเหลือเพียงพอกับจำนวนที่ขอหรือไม่
+      // ตรวจสอบ stock พัสดุก่อนอนุมัติ
       if (availableQuantity < requestedQuantity) {
         Swal.fire({
           icon: 'error',
-          title: 'อุปกรณ์ไม่เพียงพอ',
-          text: `ไม่สามารถอนุมัติได้ เนื่องจากอุปกรณ์ในคลังเหลือเพียง ${formatNumber(availableQuantity)} ชิ้น (คำร้องขอ ${formatNumber(requestedQuantity)} ชิ้น)`,
+          title: 'พัสดุไม่เพียงพอ',
+          text: `ไม่สามารถอนุมัติได้ เนื่องจากพัสดุในคลังเหลือ ${formatNumber(availableQuantity)} ชิ้น (คำร้องขอ ${formatNumber(requestedQuantity)} ชิ้น)`,
           confirmButtonColor: '#ef4444',
           confirmButtonText: 'ตกลง'
         });
@@ -78,7 +78,7 @@ export default function AdminBorrowRequests() {
 
       const confirm = await Swal.fire({
         title: 'ยืนยันการอนุมัติ?',
-        text: `ยืนยันการอนุมัติให้ยืมอุปกรณ์เป็นเวลา ${formatNumber(defaultDays)} วัน`,
+        text: `ยืนยันการอนุมัติให้ยืมพัสดุเป็นเวลา ${formatNumber(defaultDays)} วัน`,
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#22c55e',
@@ -147,16 +147,16 @@ export default function AdminBorrowRequests() {
   }
 
   return (
-    <div className="relative flex min-h-125 flex-col gap-6">
+    <div className="relative flex min-h-125 flex-col gap-6 text-base">
       {/* ส่วนบน: หัวข้อและการค้นหา */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-          📋 คำร้องขอยืม (รอพิจารณา)
+          📋 คำร้องขอยืมพัสดุ (รอพิจารณา)
         </h2>
         <div className="relative w-full md:w-80">
           <input 
             type="text" 
-            placeholder="ค้นหาผู้ขอยืม หรือ อุปกรณ์..."
+            placeholder="ค้นหาผู้ขอยืม หรือ ชื่อพัสดุ..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
@@ -173,9 +173,9 @@ export default function AdminBorrowRequests() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-150">
             <thead>
-              <tr className="bg-purple-50 text-purple-800 text-sm font-semibold border-b border-black/10">
+              <tr className="bg-purple-50 text-purple-800 text-base font-semibold border-b border-black/10">
                 <th className="p-4">รูปภาพ</th>
-                <th className="p-4">อุปกรณ์</th>
+                <th className="p-4">พัสดุ</th>
                 <th className="p-4">ผู้ขอยืม</th>
                 <th className="p-4 text-center">จำนวน</th>
                 <th className="p-4 text-center">ระยะเวลา</th>
@@ -187,7 +187,7 @@ export default function AdminBorrowRequests() {
             <tbody>
               {currentItems.length > 0 ? (
                 currentItems.map((req) => (
-                  <tr key={req._id} className="border-b border-black/10 hover:bg-gray-50 transition text-sm">
+                  <tr key={req._id} className="border-b border-black/10 hover:bg-gray-50 transition text-base">
                     <td className="p-4">
                       <img 
                         src={req.item?.image || "https://placehold.co/150"} 
@@ -195,7 +195,7 @@ export default function AdminBorrowRequests() {
                         className="w-12 h-12 object-cover rounded-lg border border-black/10"
                       />
                     </td>
-                    <td className="p-4 font-medium text-gray-800">{req.item?.name || 'ไม่พบอุปกรณ์'}</td>
+                    <td className="p-4 font-medium text-gray-800">{req.item?.name || 'ไม่พบพัสดุ'}</td>
                     <td className="p-4 text-gray-600">{req.user?.username || req.user?.name || 'ไม่ระบุตัวตน'}</td>
                     <td className="p-4 text-center text-gray-700">{formatNumber(req.quantity)}</td>
                     <td className="p-4 text-center text-gray-700">{formatNumber(req.days || 7)} วัน</td>
@@ -211,13 +211,13 @@ export default function AdminBorrowRequests() {
                       <div className="flex items-center justify-center gap-2">
                         <button 
                           onClick={() => handleUpdateStatus(req, 'approved', req.days)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 shadow-sm cursor-pointer"
                         >
                           ✓ อนุมัติ
                         </button>
                         <button 
                           onClick={() => handleUpdateStatus(req, 'rejected')}
-                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 shadow-sm cursor-pointer"
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-1 shadow-sm cursor-pointer"
                         >
                           ✕ ไม่อนุมัติ
                         </button>

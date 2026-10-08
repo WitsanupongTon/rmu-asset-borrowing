@@ -21,7 +21,19 @@ router.get('/all', protect, adminOnly, async (req, res) => {
 router.post('/add', protect, adminOnly, async (req, res) => {
   try {
     const { username, password, fullName, department, role, status } = req.body;
-    const userExists = await User.findOne({ username });
+    if (!String(username || '').trim() || !String(password || '') || !String(fullName || '').trim()) {
+      return res.status(400).json({ message: 'กรุณากรอกชื่อผู้ใช้ รหัสผ่าน และชื่อ-นามสกุลให้ครบ' });
+    }
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' });
+    }
+    if (!['user', 'admin'].includes(role || 'user')) {
+      return res.status(400).json({ message: 'กรุณาเลือกบทบาทผู้ใช้ให้ถูกต้อง' });
+    }
+
+    const normalizedUsername = String(username).trim();
+    const normalizedFullName = String(fullName).trim();
+    const userExists = await User.findOne({ username: normalizedUsername });
     
     if (userExists) return res.status(400).json({ message: 'มีชื่อผู้ใช้นี้ในระบบแล้ว' });
 
@@ -29,9 +41,9 @@ router.post('/add', protect, adminOnly, async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = await User.create({
-      username,
+      username: normalizedUsername,
       password: hashedPassword,
-      fullName,
+      fullName: normalizedFullName,
       department: department || '-',
       role,
       status: status || 'approved'
@@ -50,6 +62,12 @@ router.post('/add', protect, adminOnly, async (req, res) => {
 router.put('/:id', protect, adminOnly, async (req, res) => {
   try {
     const { fullName, role, status, department } = req.body;
+    if (fullName !== undefined && !String(fullName).trim()) {
+      return res.status(400).json({ message: 'กรุณากรอกชื่อ-นามสกุล' });
+    }
+    if (role !== undefined && !['user', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'บทบาทผู้ใช้ไม่ถูกต้อง' });
+    }
     
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id,

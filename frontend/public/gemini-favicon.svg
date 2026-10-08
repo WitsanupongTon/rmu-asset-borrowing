@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%">
+  <!-- ด้านบนกล่อง (Top Face) -->
+  <g transform="matrix(-0.866, -0.5, 0.866, -0.5, 250, 250)">
+    <!-- พื้นผิวกล่องด้านบน -->
+    <rect x="0" y="0" width="178.8" height="178.8" fill="#F9A04B" />
+    <!-- เทปปิดกล่อง -->
+    <rect x="67" y="0" width="44" height="178.8" fill="#733A33" />
+  </g>
+
+  <!-- ด้านซ้ายกล่อง (Left Face) -->
+  <g transform="matrix(-0.866, -0.5, 0, 1, 250, 250)">
+    <!-- พื้นผิวกล่องด้านซ้าย -->
+    <rect x="0" y="0" width="178.8" height="175" fill="#F88D37" />
+
+    <!-- สัญลักษณ์เตือน 1: รูปไอคอนร่ม (Umbrella) -->
+    <g transform="translate(140, 122)">
+      <path d="M -14 0 A 14 14 0 0 1 14 0 Q 7 -3 0 0 Q -7 -3 -14 0 Z" fill="#343A40" />
+      <path d="M 0 0 L 0 13 A 3.5 3.5 0 0 1 -7 13" stroke="#343A40" stroke-width="2.5" fill="none" stroke-linecap="round" />
+      <circle cx="-7" cy="-17" r="1.5" fill="#343A40" />
+      <circle cx="5" cy="-19" r="1.5" fill="#343A40" />
+    </g>
+
+    <!-- สัญลักษณ์เตือน 2: รูปลูกศรชี้ขึ้น (Up Arrows) -->
+    <g transform="translate(90, 122)">
+      <rect x="-16" y="14" width="32" height="3" fill="#343A40" />
+      <!-- ลูกศรซ้าย -->
+      <rect x="-12" y="-5" width="4" height="15" fill="#343A40" />
+      <polygon points="-10,-13 -17,-4 -3,-4" fill="#343A40" />
+      <!-- ลูกศรขวา -->
+      <rect x="8" y="-5" width="4" height="15" fill="#343A40" />
+      <polygon points="10,-13 3,-4 17,-4" fill="#343A40" />
+    </g>
+
+    <!-- สัญลักษณ์เตือน 3: รูปแก้วแตก (Fragile Glass) -->
+    <g transform="translate(40, 122)">
+      <path d="M -9 -13 L 9 -13 L 7 -2 Q 0 7 -7 -2 Z" fill="#343A40" />
+      <path d="M 0 -13 L -3 -7 L 1 -3" stroke="#F88D37" stroke-width="1.5" fill="none" />
+      <rect x="-1.5" y="4" width="3" height="11" fill="#343A40" />
+      <rect x="-7" y="15" width="14" height="3" rx="1" fill="#343A40" />
+    </g>
+  </g>
+
+  <!-- ด้านขวากล่อง (Right Face) -->
+  <g transform="matrix(0.866, -0.5, 0, 1, 250, 250)">
+    <!-- พื้นผิวกล่องด้านขวา -->
+    <rect x="0" y="0" width="178.8" height="175" fill="#E5682C" />
+
+    <!-- พับเทปกล่องด้านขวา -->
+    <rect x="67" y="0" width="44" height="55" fill="#5E2E28" />
+
+    <!-- สัญลักษณ์รีไซเคิล (Recycle Symbol) -->
+    <g transform="translate(45, 110)" fill="#343A40">
+      <path d="M -4 -14 L 6 -14 L 11 -6 L 6 -6 L 3 -10 L -4 -10 Z M 13 -9 L 13 0 L 6 -4.5 Z" />
+      <path d="M 12 2 L 7 11 L -3 11 L -0.5 7 L 4.5 7 L 7.5 2 Z M 1 15 L -7 15 L -3 8.5 Z" />
+      <path d="M -7 7 L -12 -2 L -12 -10 L -8 -10 L -8 -4 L -5 1 Z M -14 -4 L -6 -4 L -10 -11 Z" />
+    </g>
+
+    <!-- ลาเบลพัสดุและบาร์โค้ด (Shipping Label) -->
+    <g transform="translate(92, 60)">
+      <rect x="0" y="0" width="72" height="92" rx="3" fill="#FFFFFF" />
+      <!-- เส้นข้อความบนลาเบล -->
+      <line x1="8" y1="12" x2="48" y2="12" stroke="#343A40" stroke-width="4" stroke-linecap="round" />
+      <line x1="8" y1="22" x2="64" y2="22" stroke="#343A40" stroke-width="3" stroke-linecap="round" />
+      <line x1="8" y1="30" x2="52" y2="30" stroke="#343A40" stroke-width="3" stroke-linecap="round" />
+      <!-- เส้นบาร์โค้ด -->
+      <line x1="10" y1="42" x2="10" y2="82" stroke="#343A40" stroke-width="3" />
+      <line x1="16" y1="42" x2="16" y2="82" stroke="#343A40" stroke-width="2" />
+      <line x1="21" y1="42" x2="21" y2="82" stroke="#343A40" stroke-width="4" />
+      <line x1="27" y1="42" x2="27" y2="82" stroke="#343A40" stroke-width="2" />
+      <line x1="33" y1="42" x2="33" y2="82" stroke="#343A40" stroke-width="5" />
+      <line x1="41" y1="42" x2="41" y2="82" stroke="#343A40" stroke-width="2" />
+      <line x1="47" y1="42" x2="47" y2="82" stroke="#343A40" stroke-width="4" />
+      <line x1="53" y1="42" x2="53" y2="82" stroke="#343A40" stroke-width="2" />
+      <line x1="59" y1="42" x2="59" y2="82" stroke="#343A40" stroke-width="3" />
+    </g>
+  </g>
+</svg>

@@ -103,15 +103,15 @@ export default function UserHistory() {
 
   const renderStatus = (record) => {
     if (record.status === 'pending') {
-      return <span className="bg-yellow-100 text-yellow-700 font-bold px-3 py-1 rounded-full text-xs">🟡 กำลังร้องขอ</span>;
+      return <span className="bg-yellow-100 text-yellow-700 font-bold px-3 py-1 rounded-full text-sm">🟡 กำลังร้องขอ</span>;
     }
     
     if (record.status === 'returned') {
-      return <span className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-xs">🟢 คืนแล้ว</span>;
+      return <span className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-full text-sm">🟢 คืนแล้ว</span>;
     }
 
     if (record.status === 'rejected') {
-      return <span className="bg-gray-100 text-gray-600 font-bold px-3 py-1 rounded-full text-xs">⚫ ไม่อนุมัติ</span>;
+      return <span className="bg-gray-100 text-gray-600 font-bold px-3 py-1 rounded-full text-sm">⚫ ไม่อนุมัติ</span>;
     }
 
     if (record.status === 'approved') {
@@ -119,9 +119,9 @@ export default function UserHistory() {
       const isOverdue = dueDate && new Date() > dueDate;
       
       if (isOverdue) {
-        return <span className="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-xs">🔴 เลยกำหนด</span>;
+        return <span className="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm">🔴 เลยกำหนด</span>;
       }
-      return <span className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-xs">🔵 กำลังยืมอยู่</span>;
+      return <span className="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-sm">🔵 กำลังยืมอยู่</span>;
     }
 
     return null;
@@ -170,7 +170,7 @@ export default function UserHistory() {
           <div className="relative w-full md:w-80">
             <input 
               type="text" 
-              placeholder="ค้นหาชื่ออุปกรณ์..."
+              placeholder="ค้นหาชื่อพัสดุ..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -242,9 +242,9 @@ export default function UserHistory() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-175">
             <thead>
-              <tr className="bg-gray-50 text-gray-700 text-sm font-semibold border-b border-black/10">
+              <tr className="bg-gray-50 text-gray-700 text-base font-semibold border-b border-black/10">
                 <th className="p-4">รูปภาพ</th>
-                <th className="p-4">อุปกรณ์</th>
+                <th className="p-4">พัสดุ</th>
                 <th className="p-4">ผู้ยืม</th>
                 <th className="p-4 text-center">จำนวน</th>
                 <th className="p-4 text-center">วันที่ขอยืม</th>
@@ -256,7 +256,7 @@ export default function UserHistory() {
             <tbody>
               {currentItems.length > 0 ? (
                 currentItems.map((record) => (
-                  <tr key={record._id} className="border-b border-black/10 hover:bg-gray-50 transition text-sm">
+                  <tr key={record._id} className="border-b border-black/10 hover:bg-gray-50 transition text-base">
                     <td className="p-4">
                       <img 
                         src={record.item?.image || "https://placehold.co/150"} 
@@ -264,7 +264,7 @@ export default function UserHistory() {
                         className="w-12 h-12 object-cover rounded-lg border border-black/10 shadow-sm"
                       />
                     </td>
-                    <td className="p-4 font-medium text-gray-800">{record.item?.name || 'ไม่พบอุปกรณ์'}</td>
+                    <td className="p-4 font-medium text-gray-800">{record.item?.name || 'ไม่พบพัสดุ'}</td>
                     <td className="p-4 text-gray-600">{user.fullName || user.username || 'ฉัน'}</td>
                     <td className="p-4 text-center text-gray-600">{formatNumber(record.quantity)}</td>
                     

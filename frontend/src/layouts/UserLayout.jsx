@@ -23,7 +23,7 @@ export default function UserLayout() {
       const items = itemsRes.data || [];
       const myBorrows = Array.isArray(myBorrowsRes.data) ? myBorrowsRes.data : [];
 
-      // นับจำนวนชนิดอุปกรณ์ในคลัง โดยนับรายการอุปกรณ์ ไม่ได้นับหมวดหมู่
+      // นับจำนวนชนิดพัสดุในคลังจากรายการพัสดุ ไม่ได้นับหมวดหมู่
       const itemTypesCount = items.length;
 
       // นับรายการที่กำลังยืมอยู่ และเกินกำหนด
@@ -42,7 +42,7 @@ export default function UserLayout() {
         Swal.fire({
           icon: 'warning',
           title: 'คุณมีรายการเกินกำหนด!',
-          text: `คุณมีอุปกรณ์ที่เกินกำหนดคืนจำนวน ${formatNumber(overdueCount)} รายการ กรุณานำมาคืนโดยเร็ว`,
+          text: `คุณมีพัสดุที่เกินกำหนดคืนจำนวน ${formatNumber(overdueCount)} รายการ กรุณานำมาคืนโดยเร็ว`,
           confirmButtonColor: '#d33',
           timer: 5000
         });
@@ -68,7 +68,7 @@ export default function UserLayout() {
       fetchStats(false);
     };
 
-    // ⚡ ผูก Event Listeners ที่เกี่ยวข้องกับการยืม คืน และคลังอุปกรณ์[cite: 13]
+    // ⚡ ผูก Event Listeners ที่เกี่ยวข้องกับการยืม คืน และคลังพัสดุ
     socket.on('borrow_updated', handleUpdate);
     socket.on('borrowsUpdated', handleUpdate);
     socket.on('itemsUpdated', handleUpdate);
@@ -103,8 +103,8 @@ export default function UserLayout() {
 
   // เมนูเฉพาะของ User[cite: 14]
   const navItems = [
-    { label: '🕹️ ยืมอุปกรณ์', path: '/borrow' },
-    { label: '📊 ประวัติยืม-คืน', path: '/history' },
+    { label: '🕹️ ยืมพัสดุ', path: '/borrow' },
+    { label: '📊 ประวัติยืม-คืนพัสดุ', path: '/history' },
   ];
 
   return (
@@ -116,15 +116,15 @@ export default function UserLayout() {
           <div className="flex items-center gap-3">
             <div className="p-3 bg-amber-100 rounded-xl text-2xl">📋</div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">ระบบยืม-คืนอุปกรณ์</h1>
-              <p className="text-xs text-gray-500 font-medium">
+              <h1 className="text-xl font-bold text-gray-800">ระบบยืม-คืนพัสดุ</h1>
+              <p className="text-sm text-gray-600 font-medium">
                 ยินดีต้อนรับ, <span className="font-bold text-gray-800">{user.fullName || user.username || 'ผู้ใช้งาน'}</span> (ผู้ใช้งานทั่วไป)
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="bg-gray-600 hover:bg-gray-700 text-white text-xs px-4 py-2 rounded-lg flex items-center gap-2 font-medium transition shadow-sm cursor-pointer"
+            className="bg-gray-600 hover:bg-gray-700 text-white text-sm px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium transition shadow-sm cursor-pointer"
           >
             🚪 ออกจากระบบ
           </button>
@@ -135,20 +135,20 @@ export default function UserLayout() {
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">📦</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ชนิดอุปกรณ์ในระบบ</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.categories)} <span className="text-sm font-normal text-gray-500">ชนิดพัสดุในคลัง</span></p>
             </div>
           </div>
           <div className="bg-white rounded-xl p-4 shadow-md flex items-center gap-4">
             <div className="p-3 bg-blue-100 rounded-lg text-2xl">📤</div>
             <div>
-              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">อุปกรณ์ที่คุณยืม</span></p>
+              <p className="text-gray-800 font-bold text-xl">{isStatsLoading ? '...' : formatNumber(stats.borrowed)} <span className="text-sm font-normal text-gray-500">พัสดุที่คุณยืม</span></p>
             </div>
           </div>
           <div className={`bg-white rounded-xl p-4 shadow-md flex items-center gap-4 ${stats.overdue > 0 ? 'border-2 border-red-500 bg-red-50' : ''}`}>
             <div className="p-3 bg-amber-100 rounded-lg text-2xl">⚠️</div>
             <div>
               <p className={`font-bold text-xl ${stats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>
-                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>คุณเกินกำหนด</span>
+                {isStatsLoading ? '...' : formatNumber(stats.overdue)} <span className={`text-sm font-normal ${stats.overdue > 0 ? 'text-red-500' : 'text-gray-500'}`}>รายการเกินกำหนด</span>
               </p>
             </div>
           </div>
@@ -161,7 +161,7 @@ export default function UserLayout() {
               key={item.path}
               to={item.path}
               className={({ isActive }) =>
-                `px-4 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-200 shadow ${
+                `px-4 py-2.5 rounded-xl text-sm md:text-base font-semibold transition-all duration-200 shadow ${
                   isActive
                     ? 'bg-purple-900 text-white ring-2 ring-purple-300'
                     : 'bg-white text-gray-700 hover:bg-purple-50'

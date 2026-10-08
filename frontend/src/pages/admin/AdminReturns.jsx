@@ -78,7 +78,7 @@ export default function AdminReturns() {
     if (confirm.isConfirmed) {
       try {
         await API.put(`/borrows/${id}/return`);
-        Swal.fire('สำเร็จ', 'รับอุปกรณ์คืนและอัปเดตคลังเรียบร้อยแล้ว', 'success');
+        Swal.fire('สำเร็จ', 'รับคืนพัสดุและอัปเดตคลังเรียบร้อยแล้ว', 'success');
         fetchBorrows(); 
       } catch (error) {
         Swal.fire('ผิดพลาด', error.response?.data?.message || 'เกิดข้อผิดพลาดในการรับคืน', 'error');
@@ -119,22 +119,22 @@ export default function AdminReturns() {
   }
 
   return (
-    <div className="relative flex min-h-125 flex-col gap-6">
+    <div className="relative flex min-h-125 flex-col gap-6 text-base">
       {/* ส่วนบน: หัวข้อและการค้นหา */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-          🕹️ จัดการการคืน
+          🕹️ จัดการรับคืนพัสดุ
         </h2>
         <div className="relative w-full md:w-80">
           <input 
             type="text" 
-            placeholder="ค้นหาผู้ยืม หรือ อุปกรณ์..."
+            placeholder="ค้นหาผู้ยืม หรือ ชื่อพัสดุ..."
             value={searchTerm}
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1); // รีเซ็ตกลับไปหน้า 1 เสมอเมื่อมีการค้นหา
             }}
-            className="w-full border border-black/10 pl-4 pr-10 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
+            className="w-full border border-black/10 pl-4 pr-10 py-2.5 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white"
           />
           <span className="absolute right-3 top-2.5 text-gray-400 text-sm">🔍</span>
         </div>
@@ -145,9 +145,9 @@ export default function AdminReturns() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-150">
             <thead>
-              <tr className="bg-purple-50 text-purple-800 text-sm font-semibold border-b border-black/10">
+              <tr className="bg-purple-50 text-purple-800 text-base font-semibold border-b border-black/10">
                 <th className="p-4">รูปภาพ</th>
-                <th className="p-4">อุปกรณ์</th>
+                <th className="p-4">พัสดุ</th>
                 <th className="p-4">ผู้ยืม</th>
                 <th className="p-4 text-center">จำนวน</th>
                 <th className="p-4 text-center">วันที่อนุมัติ</th>
@@ -163,7 +163,7 @@ export default function AdminReturns() {
                   const dueDate = borrow.dueDate ? new Date(borrow.dueDate) : getDueDate(approvalDate, borrow.days);
                   const isOverdue = new Date() > dueDate; 
 
-                  const rowClass = isOverdue ? "border-b border-black/10 bg-red-50 hover:bg-red-100 transition text-sm" : "border-b border-black/10 hover:bg-gray-50 transition text-sm";
+                  const rowClass = isOverdue ? "border-b border-black/10 bg-red-50 hover:bg-red-100 transition text-base" : "border-b border-black/10 hover:bg-gray-50 transition text-base";
                   const normalText = isOverdue ? "text-red-600" : "text-gray-600";
                   const boldText = isOverdue ? "text-red-700 font-medium" : "text-gray-800 font-medium";
 
@@ -176,7 +176,7 @@ export default function AdminReturns() {
                           className={`w-12 h-12 object-cover rounded-lg border border-black/10 ${isOverdue ? 'border-red-300' : ''}`}
                         />
                       </td>
-                      <td className={`p-4 ${boldText}`}>{borrow.item?.name || 'ไม่พบอุปกรณ์'}</td>
+                      <td className={`p-4 ${boldText}`}>{borrow.item?.name || 'ไม่พบพัสดุ'}</td>
                       <td className={`p-4 ${normalText}`}>{borrow.user?.username || borrow.user?.name || 'ไม่ระบุตัวตน'}</td>
                       <td className={`p-4 text-center ${normalText}`}>{formatNumber(borrow.quantity)}</td>
                       
@@ -185,11 +185,11 @@ export default function AdminReturns() {
                       
                       <td className="p-4 text-center">
                         {isOverdue ? (
-                          <span className="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-xs">
+                          <span className="bg-red-100 text-red-700 font-bold px-3 py-1 rounded-full text-sm">
                             เลยกำหนด
                           </span>
                         ) : (
-                          <span className="bg-amber-100 text-amber-700 font-bold px-3 py-1 rounded-full text-xs">
+                          <span className="bg-amber-100 text-amber-700 font-bold px-3 py-1 rounded-full text-sm">
                             กำลังยืม
                           </span>
                         )}
@@ -198,7 +198,7 @@ export default function AdminReturns() {
                       <td className="p-4 text-center">
                         <button 
                           onClick={() => handleReturn(borrow._id, borrow.item?.name)}
-                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm cursor-pointer"
+                          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold transition shadow-sm cursor-pointer"
                         >
                           รับคืน
                         </button>

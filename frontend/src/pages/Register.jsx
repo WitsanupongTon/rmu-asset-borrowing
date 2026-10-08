@@ -28,7 +28,7 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-600 via-purple-600 to-purple-800 p-4">
       <div className="w-full max-w-md rounded-2xl border border-white/80 bg-white p-8 shadow-2xl shadow-indigo-200/60">
         <h2 className="mb-2 text-center text-2xl font-bold text-gray-800">ลงทะเบียนเข้าใช้งาน</h2>
-        <p className="mb-5 border-b border-gray-100 pb-4 text-center text-sm text-gray-500">สร้างบัญชีเพื่อขอยืมอุปกรณ์</p>
+        <p className="mb-5 border-b border-gray-100 pb-4 text-center text-base text-gray-500">สร้างบัญชีเพื่อขอยืมพัสดุ</p>
         <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs leading-relaxed text-blue-800">
           <span className="font-bold">หมายเหตุ:</span> หลังสมัครสมาชิก กรุณารอ Admin อนุมัติบัญชีก่อนจึงจะเข้าสู่ระบบได้
         </div>
@@ -37,7 +37,7 @@ export default function Register() {
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้งาน (Username)</label>
+            <label className="block text-base font-medium text-gray-700">ชื่อผู้ใช้งาน (Username) <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
               type="text"
               required
@@ -46,7 +46,7 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">รหัสผ่าน (Password)</label>
+            <label className="block text-base font-medium text-gray-700">รหัสผ่าน (Password) <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
               type="password"
               required
@@ -55,7 +55,7 @@ export default function Register() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">ชื่อ - นามสกุล</label>
+            <label className="block text-base font-medium text-gray-700">ชื่อ - นามสกุล <span className="text-red-600" aria-hidden="true">*</span></label>
             <input
               type="text"
               required

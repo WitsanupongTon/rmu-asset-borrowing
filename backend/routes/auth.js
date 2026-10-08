@@ -10,9 +10,19 @@ router.post('/register', async (req, res) => {
   try {
     const { username, password, fullName } = req.body;
 
+    if (!String(username || '').trim() || !String(password || '') || !String(fullName || '').trim()) {
+      return res.status(400).json({ message: 'กรุณากรอกชื่อผู้ใช้ รหัสผ่าน และชื่อ-นามสกุลให้ครบ' });
+    }
+    if (String(password).length < 8) {
+      return res.status(400).json({ message: 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร' });
+    }
+
+    const normalizedUsername = String(username).trim();
+    const normalizedFullName = String(fullName).trim();
+
     const [existingUser, existingRequest] = await Promise.all([
-      User.findOne({ username }),
-      RegistrationRequest.findOne({ username, status: 'pending' })
+      User.findOne({ username: normalizedUsername }),
+      RegistrationRequest.findOne({ username: normalizedUsername, status: 'pending' })
     ]);
     if (existingUser || existingRequest) {
       return res.status(400).json({ message: 'ชื่อผู้ใช้งานนี้มีอยู่ในระบบหรือกำลังรออนุมัติ' });
@@ -22,9 +32,9 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const registrationRequest = new RegistrationRequest({
-      username,
+      username: normalizedUsername,
       password: hashedPassword,
-      fullName
+      fullName: normalizedFullName
     });
 
     await registrationRequest.save();

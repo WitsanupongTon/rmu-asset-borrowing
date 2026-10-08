@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const currentDate = new Date();
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
   const [reportType, setReportType] = useState('month');
+  // reportYear is the ending Gregorian year; fiscal year 2569 maps to 2026.
   const [reportYear, setReportYear] = useState(currentDate.getFullYear());
   const [reportMonth, setReportMonth] = useState(currentDate.getMonth() + 1);
   const [reportFilter, setReportFilter] = useState(null);
@@ -95,24 +96,41 @@ export default function AdminDashboard() {
 
   const now = new Date();
   const getBorrowDate = (record) => new Date(record.borrowDate || record.createdAt);
-  const reportBorrows = reportFilter
+  const getReportRange = (filter) => {
+    if (!filter) return null;
+    if (filter.type === 'month') {
+      return {
+        start: new Date(filter.year, filter.month - 1, 1),
+        end: new Date(filter.year, filter.month, 1),
+      };
+    }
+    if (filter.type === 'fiscalYear') {
+      return {
+        start: new Date(filter.year - 1, 9, 1),
+        end: new Date(filter.year, 9, 1),
+      };
+    }
+    return {
+      start: new Date(filter.year, 0, 1),
+      end: new Date(filter.year + 1, 0, 1),
+    };
+  };
+  const reportRange = getReportRange(reportFilter);
+  const reportBorrows = reportRange
     ? borrows.filter((record) => {
         const borrowDate = getBorrowDate(record);
-        if (Number.isNaN(borrowDate.getTime())) return false;
-
-        if (reportFilter.type === 'year') {
-          return borrowDate.getFullYear() === reportFilter.year;
-        }
-
-        return borrowDate.getFullYear() === reportFilter.year
-          && borrowDate.getMonth() + 1 === reportFilter.month;
+        return !Number.isNaN(borrowDate.getTime())
+          && borrowDate >= reportRange.start
+          && borrowDate < reportRange.end;
       })
     : borrows;
 
   const reportPeriodLabel = reportFilter
-    ? reportFilter.type === 'year'
-      ? `รายงานประจำปี ${reportFilter.year + 543}`
-      : `รายงานประจำเดือน ${new Date(reportFilter.year, reportFilter.month - 1, 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}`
+    ? reportFilter.type === 'fiscalYear'
+      ? `รายงานปีงบประมาณ ${reportFilter.year + 543}`
+      : reportFilter.type === 'year'
+        ? `รายงานปีปฏิทิน ${reportFilter.year + 543}`
+        : `รายงานประจำเดือน ${new Date(reportFilter.year, reportFilter.month - 1, 1).toLocaleDateString('th-TH', { month: 'long', year: 'numeric' })}`
     : 'ข้อมูลทั้งหมด';
 
   // KPI แสดงสถานะปัจจุบันเสมอ ไม่เปลี่ยนตามตัวกรองรายงาน PDF
@@ -123,8 +141,7 @@ export default function AdminDashboard() {
       .reduce((sum, b) => sum + (Number(b.quantity) || 0), 0),
     pending: borrows.filter(b => b.status === 'pending').length,
     overdue: borrows
-      .filter(b => b.status === 'approved' && b.dueDate && new Date(b.dueDate) < now)
-      .reduce((sum, b) => sum + (Number(b.quantity) || 0), 0)
+      .filter(b => b.status === 'approved' && b.dueDate && new Date(b.dueDate) < now).length
   };
 
   const itemPopularity = {};
@@ -136,26 +153,30 @@ export default function AdminDashboard() {
   });
   
   const top5ItemsData = Object.keys(itemPopularity)
-    .map(name => ({ name, อุปกรณ์: itemPopularity[name] }))
-    .sort((a, b) => b.อุปกรณ์ - a.อุปกรณ์)
+    .map(name => ({ name, พัสดุ: itemPopularity[name] }))
+    .sort((a, b) => b.พัสดุ - a.พัสดุ)
     .slice(0, 5);
 
-  const trendEndDate = reportFilter
-    ? new Date(reportFilter.year, reportFilter.type === 'month' ? reportFilter.month - 1 : 11, 1)
-    : new Date(now.getFullYear(), now.getMonth(), 1);
-  const trendMonthCount = 12;
-  const trendStartDate = new Date(trendEndDate.getFullYear(), trendEndDate.getMonth() - trendMonthCount + 1, 1);
-  const trendEndExclusive = new Date(trendEndDate.getFullYear(), trendEndDate.getMonth() + 1, 1);
-  const monthlyTotals = new Map();
-  const trendSourceBorrows = reportFilter?.type === 'month' ? borrows : reportBorrows;
+  const isDailyTrend = reportFilter?.type === 'month';
+  const trendMonthCount = isDailyTrend ? 1 : 12;
+  const trendStartDate = reportRange
+    ? new Date(reportRange.start.getFullYear(), reportRange.start.getMonth(), 1)
+    : new Date(now.getFullYear(), now.getMonth() - trendMonthCount + 1, 1);
+  const trendEndExclusive = reportRange
+    ? reportRange.end
+    : new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const periodTotals = new Map();
+  const trendSourceBorrows = reportRange ? reportBorrows : borrows;
 
   trendSourceBorrows.forEach((record) => {
     if (record.status !== 'approved' && record.status !== 'returned') return;
     const borrowDate = getBorrowDate(record);
     if (Number.isNaN(borrowDate.getTime()) || borrowDate < trendStartDate || borrowDate >= trendEndExclusive) return;
 
-    const monthKey = `${borrowDate.getFullYear()}-${borrowDate.getMonth()}`;
-    monthlyTotals.set(monthKey, (monthlyTotals.get(monthKey) || 0) + (Number(record.quantity) || 0));
+    const periodKey = isDailyTrend
+      ? `${borrowDate.getFullYear()}-${borrowDate.getMonth()}-${borrowDate.getDate()}`
+      : `${borrowDate.getFullYear()}-${borrowDate.getMonth()}`;
+    periodTotals.set(periodKey, (periodTotals.get(periodKey) || 0) + (Number(record.quantity) || 0));
   });
 
   const monthlyTrendData = Array.from({ length: trendMonthCount }, (_, index) => {
@@ -164,10 +185,29 @@ export default function AdminDashboard() {
     return {
       month: monthDate.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' }),
       monthTitle: monthDate.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' }),
-      borrowed: monthlyTotals.get(monthKey) || 0,
+      borrowed: periodTotals.get(monthKey) || 0,
     };
   });
-  const monthlyTrendTotal = monthlyTrendData.reduce((total, month) => total + (Number(month.borrowed) || 0), 0);
+  const dailyTrendData = isDailyTrend && reportRange
+    ? Array.from({ length: new Date(reportRange.end.getFullYear(), reportRange.end.getMonth(), 0).getDate() }, (_, index) => {
+        const day = index + 1;
+        const dayKey = `${reportRange.start.getFullYear()}-${reportRange.start.getMonth()}-${day}`;
+        return {
+          period: String(day),
+          periodTitle: new Date(reportRange.start.getFullYear(), reportRange.start.getMonth(), day)
+            .toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }),
+          borrowed: periodTotals.get(dayKey) || 0,
+        };
+      })
+    : [];
+  const trendData = isDailyTrend
+    ? dailyTrendData
+    : monthlyTrendData.map((month) => ({
+        period: month.month,
+        periodTitle: month.monthTitle,
+        borrowed: month.borrowed,
+      }));
+  const trendTotal = trendData.reduce((total, period) => total + (Number(period.borrowed) || 0), 0);
 
   const isOverdue = (record) =>
     record.status === 'approved' && record.dueDate && new Date(record.dueDate) < now;
@@ -202,9 +242,17 @@ export default function AdminDashboard() {
   };
 
   const availableReportYears = Array.from(new Set([
-    currentDate.getFullYear(),
+    reportType === 'fiscalYear' && currentDate.getMonth() >= 9
+      ? currentDate.getFullYear() + 1
+      : currentDate.getFullYear(),
     ...borrows
-      .map((record) => getBorrowDate(record).getFullYear())
+      .map((record) => {
+        const borrowDate = getBorrowDate(record);
+        if (Number.isNaN(borrowDate.getTime())) return null;
+        return reportType === 'fiscalYear'
+          ? borrowDate.getFullYear() + (borrowDate.getMonth() >= 9 ? 1 : 0)
+          : borrowDate.getFullYear();
+      })
       .filter((year) => Number.isFinite(year)),
   ])).sort((a, b) => b - a);
 
@@ -350,24 +398,24 @@ export default function AdminDashboard() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
           <div className="print-keep-together bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">📦 อุปกรณ์ทั้งหมดในคลัง</p>
+            <p className="text-sm text-gray-600 mb-1">📦 พัสดุทั้งหมดในคลัง</p>
             <p className="text-2xl font-bold text-gray-800">{formatNumber(currentStats.totalItems)} <span className="text-xs font-medium text-gray-500">ชิ้น</span></p>
           </div>
           <div className="print-keep-together bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">👥 ผู้ใช้งานในระบบทั้งหมด</p>
+            <p className="text-sm text-gray-600 mb-1">👥 ผู้ใช้งานในระบบทั้งหมด</p>
             <p className="text-2xl font-bold text-gray-800">{formatNumber(allUsers.length)} <span className="text-xs font-medium text-gray-500">บัญชี</span></p>
           </div>
           <div className="print-keep-together bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">🏃 กำลังถูกยืม</p>
+            <p className="text-sm text-gray-600 mb-1">🏃 กำลังถูกยืม</p>
             <p className="text-2xl font-bold text-blue-700">{formatNumber(currentStats.borrowed)} <span className="text-xs font-medium text-gray-500">ชิ้น</span></p>
           </div>
           <div className="print-keep-together bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">⏳ คำร้องรออนุมัติ</p>
+            <p className="text-sm text-gray-600 mb-1">⏳ คำร้องรออนุมัติ</p>
             <p className="text-2xl font-bold text-amber-600">{formatNumber(currentStats.pending)} <span className="text-xs font-medium text-gray-500">คำร้อง</span></p>
           </div>
           <div className="print-keep-together bg-white border border-black/10 rounded-lg shadow-md p-4 text-center">
-            <p className="text-xs text-gray-500 mb-1">⚠️ เกินกำหนดส่ง</p>
-            <p className={`text-2xl font-bold ${currentStats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>{formatNumber(currentStats.overdue)} <span className="text-xs font-medium text-gray-500">ชิ้น</span></p>
+            <p className="text-sm text-gray-600 mb-1">⚠️ รายการเกินกำหนดส่ง</p>
+            <p className={`text-2xl font-bold ${currentStats.overdue > 0 ? 'text-red-600' : 'text-gray-800'}`}>{formatNumber(currentStats.overdue)} <span className="text-sm font-medium text-gray-500">รายการ</span></p>
           </div>
         </div>
 
@@ -386,16 +434,20 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 gap-6">
           <div className="print-keep-together bg-white p-4 rounded-xl border border-black/10 shadow-md">
             <h3 className="text-sm font-bold text-gray-700">📈 แนวโน้มการยืมรายเดือน</h3>
-            <p className="mb-4 mt-1 text-xs text-gray-500">จำนวนชิ้นที่ถูกยืมในแต่ละเดือน (12 เดือน)</p>
-            {monthlyTrendTotal > 0 ? (
+            <p className="mb-4 mt-1 text-xs text-gray-500">
+              {reportFilter?.type === 'month'
+                ? `จำนวนชิ้นที่ยืมในแต่ละวันของเดือน ${reportPeriodLabel.replace('รายงานประจำเดือน ', '')}`
+                : `จำนวนชิ้นที่ยืมรายเดือน ${reportFilter ? `ใน${reportPeriodLabel}` : 'ย้อนหลัง 12 เดือน'}`}
+            </p>
+            {trendTotal > 0 ? (
               <div className="h-64 w-full">
                 <ResponsiveContainer>
-                  <LineChart data={monthlyTrendData} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
+                  <LineChart data={trendData} margin={{ top: 8, right: 16, left: 4, bottom: 4 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                    <XAxis dataKey="period" tick={{ fontSize: 11 }} interval={isDailyTrend ? 2 : 0} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
                     <Tooltip
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.monthTitle || ''}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.periodTitle || ''}
                       formatter={(value) => [`${formatNumber(value)} ชิ้น`, 'ยืม']}
                     />
                     <Line type="monotone" dataKey="borrowed" name="จำนวนที่ยืม" stroke="#7c3aed" strokeWidth={3} dot={{ r: 3, fill: '#7c3aed' }} activeDot={{ r: 6 }} />
@@ -410,7 +462,7 @@ export default function AdminDashboard() {
           </div>
 
           <div className="print-keep-together bg-white p-4 rounded-xl border border-black/10 shadow-md">
-            <h3 className="text-sm font-bold text-gray-700">🏆 5 อันดับอุปกรณ์ที่ถูกยืมมากที่สุด</h3>
+            <h3 className="text-sm font-bold text-gray-700">🏆 5 อันดับพัสดุที่ถูกยืมมากที่สุด</h3>
             <p className="mb-4 mt-1 text-xs text-gray-500">ปริมาณการยืมสะสม{reportFilter ? ` — ${reportPeriodLabel}` : ''}</p>
             {top5ItemsData.length > 0 ? (
               <div className="h-64 w-full">
@@ -420,7 +472,7 @@ export default function AdminDashboard() {
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={formatNumber} />
                     <YAxis type="category" dataKey="name" width={105} tick={{ fontSize: 11 }} />
                     <Tooltip formatter={(value) => [`${formatNumber(value)} ชิ้น`, 'ยืมสะสม']} />
-                    <Bar dataKey="อุปกรณ์" name="ยืมสะสม" radius={[0, 6, 6, 0]} barSize={24}>
+                    <Bar dataKey="พัสดุ" name="ยืมสะสม" radius={[0, 6, 6, 0]} barSize={24}>
                       {top5ItemsData.map((entry, index) => (
                         <Cell key={`cell-${entry.name}`} fill={BAR_COLORS[index % BAR_COLORS.length]} />
                       ))}
@@ -494,7 +546,7 @@ export default function AdminDashboard() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-black/10 text-gray-600">
-                  <th className="py-2 font-semibold">อุปกรณ์</th>
+                  <th className="py-2 font-semibold">พัสดุ</th>
                   <th className="py-2 font-semibold text-center">วันที่ยืม</th>
                   <th className="py-2 font-semibold text-center">กำหนดคืน</th>
                   <th className="py-2 font-semibold text-center">ผู้ยืม</th>
@@ -546,14 +598,17 @@ export default function AdminDashboard() {
               เลือกช่วงเวลารายงาน
             </h3>
             <p className="mt-1 text-sm text-gray-500">
-              กราฟและตารางใช้ช่วงวันที่เลือก; KPI ด้านบนและจำนวนคลังเป็นสถานะปัจจุบัน
+              เลือกได้ทั้งรายเดือน ปีปฏิทิน หรือปีงบประมาณ (1 ต.ค.–30 ก.ย.); กราฟและตารางใช้ช่วงที่เลือก ส่วน KPI เป็นสถานะปัจจุบัน
             </p>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <button
                 type="button"
                 aria-pressed={reportType === 'month'}
-                onClick={() => setReportType('month')}
+                onClick={() => {
+                  setReportType('month');
+                  setReportYear(currentDate.getFullYear());
+                }}
                 className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${reportType === 'month' ? 'border-purple-700 bg-purple-700 text-white' : 'border-gray-200 text-gray-700 hover:bg-purple-50'}`}
               >
                 รายเดือน
@@ -561,10 +616,24 @@ export default function AdminDashboard() {
               <button
                 type="button"
                 aria-pressed={reportType === 'year'}
-                onClick={() => setReportType('year')}
+                onClick={() => {
+                  setReportType('year');
+                  setReportYear(currentDate.getFullYear());
+                }}
                 className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${reportType === 'year' ? 'border-purple-700 bg-purple-700 text-white' : 'border-gray-200 text-gray-700 hover:bg-purple-50'}`}
               >
-                ทั้งปี
+                ปีปฏิทิน
+              </button>
+              <button
+                type="button"
+                aria-pressed={reportType === 'fiscalYear'}
+                onClick={() => {
+                  setReportType('fiscalYear');
+                  setReportYear(currentDate.getFullYear() + (currentDate.getMonth() >= 9 ? 1 : 0));
+                }}
+                className={`rounded-xl border px-4 py-3 text-sm font-semibold transition ${reportType === 'fiscalYear' ? 'border-purple-700 bg-purple-700 text-white' : 'border-gray-200 text-gray-700 hover:bg-purple-50'}`}
+              >
+                ปีงบประมาณ (ต.ค. – ก.ย.)
               </button>
             </div>
 

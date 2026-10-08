@@ -16,7 +16,7 @@ const readCartDraft = (storageKey) => {
     return {
       items: Array.isArray(draft.items) ? draft.items.map((item) => ({
         _id: item.itemId || item._id,
-        name: item.itemName || item.name || 'กำลังตรวจสอบอุปกรณ์',
+        name: item.itemName || item.name || 'กำลังตรวจสอบพัสดุ',
         borrowQty: Number(item.borrowQty) || 1,
         borrowDays: Number(item.borrowDays) || 7,
         requestId: item.requestId || createRequestId(),
@@ -77,13 +77,13 @@ export default function BorrowEquipment() {
       socket.connect();
     }
 
-    // ⚡ ฟังก์ชันดักรับ Event เมื่อข้อมูลอุปกรณ์มีการอัปเดต
+    // ⚡ ฟังก์ชันดักรับ Event เมื่อข้อมูลพัสดุมีการอัปเดต
     const handleItemsUpdated = () => {
       fetchItems();
 
       Swal.fire({
         icon: 'info',
-        title: 'ข้อมูลอุปกรณ์อัปเดตแล้ว',
+        title: 'ข้อมูลพัสดุอัปเดตแล้ว',
         toast: true,
         position: 'top-end',
         showConfirmButton: false,
@@ -112,7 +112,7 @@ export default function BorrowEquipment() {
         if (!latestItem) {
           return {
             ...cartItem,
-            name: cartItem.name || 'ไม่พบอุปกรณ์นี้แล้ว',
+            name: cartItem.name || 'ไม่พบพัสดุนี้แล้ว',
             quantity: 0,
             image: 'https://placehold.co/150?text=No+Image',
             isMissing: true,
@@ -146,7 +146,7 @@ export default function BorrowEquipment() {
     }
 
     if (cart.find((c) => c._id === item._id)) {
-      Swal.fire('แจ้งเตือน', 'อุปกรณ์นี้อยู่ในรายการแล้ว', 'info');
+      Swal.fire('แจ้งเตือน', 'พัสดุนี้อยู่ในรายการแล้ว', 'info');
       return;
     }
     setActiveItem(item);
@@ -202,10 +202,10 @@ export default function BorrowEquipment() {
     );
     if (unavailableItem) {
       Swal.fire(
-        'จำนวนอุปกรณ์เปลี่ยนแปลง',
+        'จำนวนพัสดุเปลี่ยนแปลง',
         unavailableItem.isMissing
-          ? `ไม่พบอุปกรณ์ "${unavailableItem.name}" แล้ว กรุณาลบออกจากตะกร้า`
-          : `อุปกรณ์ "${unavailableItem.name}" เหลือ ${formatNumber(unavailableItem.quantity)} ชิ้น กรุณาลดจำนวนหรือเอาออกจากตะกร้า`,
+          ? `ไม่พบพัสดุ "${unavailableItem.name}" แล้ว กรุณาลบออกจากตะกร้า`
+          : `พัสดุ "${unavailableItem.name}" เหลือ ${formatNumber(unavailableItem.quantity)} ชิ้น กรุณาลดจำนวนหรือเอาออกจากตะกร้า`,
         'warning'
       );
       return;
@@ -222,7 +222,7 @@ export default function BorrowEquipment() {
         })),
       });
 
-      Swal.fire('สำเร็จ!', 'ส่งคำร้องขอยืมอุปกรณ์ทั้งหมดเรียบร้อยแล้ว รอพิจารณา', 'success');
+      Swal.fire('สำเร็จ!', 'ส่งคำร้องขอยืมพัสดุทั้งหมดเรียบร้อยแล้ว รอพิจารณา', 'success');
       setCart([]); 
       setSubmissionUnconfirmed(false);
       setIsCartModalOpen(false); 
@@ -238,14 +238,14 @@ export default function BorrowEquipment() {
   };
 
   if (isLoading) {
-    return <LoadingState message="กำลังโหลดรายการอุปกรณ์..." />;
+    return <LoadingState message="กำลังโหลดรายการพัสดุ..." />;
   }
 
   return (
     <div className="space-y-6 relative">
       <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-md border border-black/10">
         <h2 className="text-xl font-bold flex items-center gap-2 text-gray-800">
-          🕹️ ยืมอุปกรณ์
+          🕹️ ยืมพัสดุ
         </h2>
         {cart.length > 0 && (
           <button 
@@ -274,9 +274,9 @@ export default function BorrowEquipment() {
                 }}
               />
               <h3 className="font-bold text-gray-800">{item.name}</h3>
-              <p className="text-xs text-gray-500 mb-2">{item.category}</p>
+              <p className="text-sm text-gray-600 mb-2">{item.category}</p>
               
-              <div className="text-xs text-gray-500 grow mb-4">
+              <div className="text-sm text-gray-600 grow mb-4">
                 {item.description ? (
                   item.description.length > 80 ? (
                     <div>
@@ -288,7 +288,7 @@ export default function BorrowEquipment() {
                       <button
                         type="button"
                         onClick={() => toggleExpand(item._id)}
-                        className="text-purple-600 font-semibold hover:underline text-[11px] mt-1 inline-flex items-center gap-1 cursor-pointer"
+                        className="text-purple-600 font-semibold hover:underline text-sm mt-1 inline-flex items-center gap-1 cursor-pointer"
                       >
                         {expandedItems[item._id] ? "▲ แสดงน้อยลง" : "▼ อ่านเพิ่มเติม"}
                       </button>
@@ -326,16 +326,18 @@ export default function BorrowEquipment() {
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-all duration-300">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden flex flex-col transform scale-100 border border-black/10">
             <div className="p-4 border-b border-black/10 bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-800">ระบุรายละเอียดการยืม</h3>
+              <h3 className="text-lg font-bold text-gray-800">ระบุรายละเอียดการยืมพัสดุ</h3>
               <p className="text-sm text-gray-500">{activeItem.name}</p>
             </div>
             
             <div className="p-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">จำนวนที่ต้องการ (เหลือ {formatNumber(activeItem.quantity)})</label>
+                <label className="block text-base font-medium text-gray-700 mb-1">จำนวนพัสดุที่ต้องการ <span className="text-red-600" aria-hidden="true">*</span> (คงเหลือ {formatNumber(activeItem.quantity)})</label>
                 <input 
                   type="number" 
+                  required
                   min="1" 
+                  step="1"
                   max={activeItem.quantity}
                   value={modalQty}
                   onChange={(e) => setModalQty(e.target.value)}
@@ -344,8 +346,9 @@ export default function BorrowEquipment() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">ระยะเวลาการยืม (วัน)</label>
+                <label className="block text-base font-medium text-gray-700 mb-1">ระยะเวลาการยืม (วัน) <span className="text-red-600" aria-hidden="true">*</span></label>
                 <select 
+                  required={!isCustomDays}
                   value={isCustomDays ? 'custom' : modalDays}
                   onChange={(e) => {
                     if (e.target.value === 'custom') {
@@ -368,7 +371,9 @@ export default function BorrowEquipment() {
                   <div className="mt-3 animate-fade-in">
                     <input 
                       type="number" 
+                      required
                       min="1"
+                      step="1"
                       placeholder="พิมพ์จำนวนวันที่ต้องการ..."
                       value={modalDays}
                       onChange={(e) => setModalDays(e.target.value)}
@@ -417,7 +422,7 @@ export default function BorrowEquipment() {
                 <thead>
                   <tr className="bg-purple-50 text-purple-800 text-sm border-b border-black/10">
                     <th className="p-3">รูปภาพ</th>
-                    <th className="p-3">ชื่ออุปกรณ์</th>
+                    <th className="p-3">ชื่อพัสดุ</th>
                     <th className="p-3">จำนวน</th>
                     <th className="p-3">เวลา (วัน)</th>
                     <th className="p-3 text-center">ลบ</th>
@@ -435,7 +440,7 @@ export default function BorrowEquipment() {
                       <td className="p-3 text-center">
                         {c.isMissing || c.borrowQty > c.quantity ? (
                           <p className="mb-2 text-xs font-medium text-red-600">
-                            {c.isMissing ? 'ไม่พบอุปกรณ์' : `เหลือเพียง ${formatNumber(c.quantity)} ชิ้น`}
+                            {c.isMissing ? 'ไม่พบพัสดุ' : `เหลือเพียง ${formatNumber(c.quantity)} ชิ้น`}
                           </p>
                         ) : null}
                         <button

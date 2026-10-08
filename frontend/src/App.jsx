@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 // 📌 Component ฝั่ง User
 import UserHistory from './pages/user/UserHistory'; // 👈 1. นำเข้า UserHistory
 
-// 📌 Component สำหรับยืมอุปกรณ์ (ใช้ตัวเดียวกันทั้ง Admin และ User)
+// Component สำหรับยืมพัสดุ (ใช้ตัวเดียวกันทั้ง Admin และ User)
 import BorrowEquipment from './pages/admin/BorrowEquipment';
 
 // 📌 Components ฝั่ง Admin

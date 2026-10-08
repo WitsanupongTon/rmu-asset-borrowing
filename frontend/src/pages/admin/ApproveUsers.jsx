@@ -145,7 +145,7 @@ export default function ApproveUsers() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 text-gray-600 text-sm font-semibold border-b border-black/10">
+              <tr className="bg-gray-50 text-gray-600 text-base font-semibold border-b border-black/10">
                 <th className="p-4">ชื่อผู้ใช้</th>
                 <th className="p-4">ชื่อ-นามสกุล</th>
                 <th className="p-4">วันที่สมัคร</th>
@@ -156,7 +156,7 @@ export default function ApproveUsers() {
             <tbody>
               {currentItems.length > 0 ? (
                 currentItems.map((u) => (
-                  <tr key={u._id} className="border-b border-black/10 hover:bg-gray-50 text-sm text-gray-700">
+                  <tr key={u._id} className="border-b border-black/10 hover:bg-gray-50 text-base text-gray-700">
                     <td className="p-4 font-semibold text-gray-900">{u.username}</td>
                     <td className="p-4">{u.fullName}</td>
                     <td className="p-4">{formatDate(u.createdAt)}</td>
@@ -169,13 +169,13 @@ export default function ApproveUsers() {
                       <div className="flex justify-center gap-2">
                         <button
                           onClick={() => handleUpdateStatus(u._id, 'approved', u.fullName)}
-                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition shadow-sm cursor-pointer"
+                          className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm cursor-pointer"
                         >
                           อนุมัติ
                         </button>
                         <button
                           onClick={() => handleUpdateStatus(u._id, 'rejected', u.fullName)}
-                          className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg font-semibold text-xs transition shadow-sm cursor-pointer"
+                          className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg font-semibold text-sm transition shadow-sm cursor-pointer"
                         >
                           ปฏิเสธ
                         </button>

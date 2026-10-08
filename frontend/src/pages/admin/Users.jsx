@@ -171,7 +171,7 @@ export default function Users() {
             <tbody>
               {currentItems.length > 0 ? (
                 currentItems.map((u) => (
-                  <tr key={u._id} className="border-b border-black/10 hover:bg-gray-50 text-sm">
+                  <tr key={u._id} className="border-b border-black/10 hover:bg-gray-50 text-base">
                     <td className="p-4 font-medium text-gray-800">{u.username}</td>
                     <td className="p-4 text-gray-600">{u.fullName}</td>
                     <td className="p-4">
@@ -184,10 +184,10 @@ export default function Users() {
                         <span className="text-gray-400 text-xs font-semibold">ผู้ใช้ปัจจุบัน</span>
                       ) : (
                         <div className="flex justify-center gap-2">
-                          <button onClick={() => handleOpenModal(u)} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-1.5 rounded-lg shadow-sm text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+                          <button onClick={() => handleOpenModal(u)} className="bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg shadow-sm text-sm font-medium flex items-center gap-1 transition cursor-pointer">
                             ✏️ แก้ไข
                           </button>
-                          <button onClick={() => handleDelete(u._id)} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-lg shadow-sm text-xs font-medium flex items-center gap-1 transition cursor-pointer">
+                          <button onClick={() => handleDelete(u._id)} className="bg-rose-500 hover:bg-rose-600 text-white px-3 py-2 rounded-lg shadow-sm text-sm font-medium flex items-center gap-1 transition cursor-pointer">
                             🗑️ ลบ
                           </button>
                         </div>
@@ -225,7 +225,7 @@ export default function Users() {
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">ชื่อผู้ใช้ (Username)</label>
+                <label className="block text-base font-semibold text-gray-600 mb-1">ชื่อผู้ใช้ (Username) <span className="text-red-600" aria-hidden="true">*</span></label>
                 <input 
                   type="text" 
                   required 
@@ -237,10 +237,11 @@ export default function Users() {
               </div>
               {!isEditing && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">รหัสผ่าน</label>
+                  <label className="block text-base font-semibold text-gray-600 mb-1">รหัสผ่าน <span className="text-red-600" aria-hidden="true">*</span></label>
                   <input 
                     type="password" 
                     required 
+                    minLength={8}
                     className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none" 
                     value={formData.password} 
                     onChange={e => setFormData({...formData, password: e.target.value})} 
@@ -248,7 +249,7 @@ export default function Users() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">ชื่อ-นามสกุล</label>
+                <label className="block text-base font-semibold text-gray-600 mb-1">ชื่อ-นามสกุล <span className="text-red-600" aria-hidden="true">*</span></label>
                 <input 
                   type="text" 
                   required 
@@ -259,8 +260,9 @@ export default function Users() {
               </div>
               
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">บทบาท</label>
+                <label className="block text-base font-semibold text-gray-600 mb-1">บทบาท <span className="text-red-600" aria-hidden="true">*</span></label>
                 <select 
+                  required
                   className="w-full border border-black/10 p-2 rounded-lg text-sm focus:ring-2 focus:ring-purple-400 outline-none" 
                   value={formData.role} 
                   onChange={e => setFormData({...formData, role: e.target.value})}
